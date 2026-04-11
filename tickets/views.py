@@ -99,6 +99,26 @@ def update_ticket_status(request, ticket_id):
 
     return JsonResponse({'error': 'Only PUT method allowed'}, status=405)
 
+def update_ticket_status_page(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    if request.method == 'POST':
+        old_status = ticket.status
+        new_status = request.POST.get('status')
+
+        if new_status and new_status != old_status:
+            ticket.status = new_status
+            ticket.save()
+
+            StatusHistory.objects.create(
+                ticket=ticket,
+                old_status=old_status,
+                new_status=new_status,
+                changed_by=ticket.created_by
+            )
+
+    return redirect('ticket_list_page')
+
 
 @csrf_exempt
 def delete_ticket(request, ticket_id):
@@ -196,18 +216,26 @@ def create_comment(request, ticket_id):
     return JsonResponse({'error': 'Only POST method allowed'}, status=405)
 
 def create_unit_page(request):
+    units = Unit.objects.all()
+
     if request.method == 'POST':
         name = request.POST.get('name')
         description = request.POST.get('description')
+        parent_id = request.POST.get('parent')
+
+        parent = None
+        if parent_id:
+            parent = Unit.objects.get(id=parent_id)
 
         if name:
             Unit.objects.create(
                 name=name,
-                description=description
+                description=description,
+                parent=parent
             )
             return redirect('unit_list_page')
 
-    return render(request, 'tickets/create_unit.html')
+    return render(request, 'tickets/create_unit.html', {'units': units})
 
 
 def unit_list_page(request):
@@ -250,5 +278,33 @@ def create_ticket_page(request):
 
 
 def ticket_list_page(request):
-    tickets = Ticket.objects.all()
-    return render(request, 'tickets/ticket_list.html', {'tickets': tickets})
+    tickets = Ticket.objects.all().prefetch_related('comments__user')
+    users = User.objects.all()
+    return render(request, 'tickets/ticket_list.html', {'tickets': tickets, 'users': users})
+
+def add_comment_page(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    if request.method == 'POST':
+        content = request.POST.get('content')
+        user_id = request.POST.get('user')
+
+        if content and user_id:
+            Comment.objects.create(
+                ticket=ticket,
+                user_id=user_id,
+                message=content
+            )
+
+    return redirect('ticket_list_page')
+
+def dashboard_page(request):
+    total_units = Unit.objects.count()
+    total_tickets = Ticket.objects.count()
+    total_topics = Topic.objects.count()
+
+    return render(request, 'tickets/dashboard.html', {
+        'total_units': total_units,
+        'total_tickets': total_tickets,
+        'total_topics': total_topics
+    })

@@ -1,33 +1,85 @@
-{% extends 'tickets/base.html' %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tickets</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
 
-{% block content %}
+<div class="container mt-4">
 
-<h1 class="mb-4">Tickets</h1>
+    <!-- NAV -->
+    <div class="mb-3">
+        <a href="/api/ui/units/" class="btn btn-outline-secondary">Units</a>
+        <a href="/api/ui/tickets/" class="btn btn-outline-secondary">Tickets</a>
+        <a href="/api/ui/units/create/" class="btn btn-outline-primary">Create Unit</a>
+        <a href="/api/ui/tickets/create/" class="btn btn-outline-primary">Create Ticket</a>
+    </div>
 
-<a href="/api/ui/tickets/create/" class="btn btn-primary mb-3">Create Ticket</a>
+    <h1 class="mb-4">Tickets</h1>
 
-{% if tickets %}
-    {% for ticket in tickets %}
-        <div class="list-group-item mb-3 shadow-sm">
-            <h5>{{ ticket.title }}</h5>
-            <p>{{ ticket.description }}</p>
+    <a href="/api/ui/tickets/create/" class="btn btn-primary mb-3">Create Ticket</a>
 
-            <span class="badge bg-secondary">{{ ticket.status }}</span>
-            <span class="badge bg-warning text-dark">{{ ticket.priority }}</span>
+    {% if tickets %}
+        {% for ticket in tickets %}
+            <div class="list-group-item mb-3 p-3">
 
-            <p class="mt-2"><strong>Unit:</strong> {{ ticket.unit.name }}</p>
-            <p><strong>Topic:</strong> {{ ticket.topic.name }}</p>
-            <p><strong>Created By:</strong> {{ ticket.created_by.username }}</p>
+                <h5>{{ ticket.title }}</h5>
+                <p>{{ ticket.description }}</p>
 
-            <form method="post" action="/api/tickets/{{ ticket.id }}/update-status/" class="mt-2">
-                {% csrf_token %}
-                <button name="status" value="in_progress" class="btn btn-sm btn-primary me-2">Start</button>
-                <button name="status" value="done" class="btn btn-sm btn-success">Done</button>
-            </form>
-        </div>
-    {% endfor %}
-{% else %}
-    <p>No tickets yet</p>
-{% endif %}
+                <span class="badge bg-secondary">{{ ticket.status }}</span>
+                <span class="badge bg-warning text-dark">{{ ticket.priority }}</span>
 
-{% endblock %}
+                <p class="mt-2"><strong>Unit:</strong> {{ ticket.unit.name }}</p>
+                <p><strong>Topic:</strong> {{ ticket.topic.name }}</p>
+                <p><strong>Created By:</strong> {{ ticket.created_by.username }}</p>
+
+                <!-- Status Buttons -->
+                <form method="post" action="/api/ui/tickets/{{ ticket.id }}/update-status/" class="mt-2">
+                    {% csrf_token %}
+                    <button name="status" value="in_progress" class="btn btn-sm btn-primary">Start</button>
+                    <button name="status" value="done" class="btn btn-sm btn-success">Done</button>
+                </form>
+
+                <hr>
+
+                <!-- COMMENTS -->
+                <h6>Comments</h6>
+
+                {% for comment in ticket.comments.all %}
+                    <div class="border rounded p-2 mb-2">
+                        <strong>{{ comment.user.username }}</strong><br>
+                        {{ comment.message }}<br>
+                        <small class="text-muted">{{ comment.created_at }}</small>
+                    </div>
+                {% empty %}
+                    <p class="text-muted">No comments yet</p>
+                {% endfor %}
+
+                <!-- ADD COMMENT -->
+                <form method="post" action="/api/ui/tickets/{{ ticket.id }}/comments/" class="mt-2">
+                    {% csrf_token %}
+
+                    <label>User</label>
+                    <select name="user" class="form-control mb-2">
+                        {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.username }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <label>Add Comment</label>
+                    <textarea name="content" class="form-control mb-2"></textarea>
+
+                    <button type="submit" class="btn btn-dark">Post Comment</button>
+                </form>
+
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No tickets yet</p>
+    {% endif %}
+
+</div>
+
+</body>
+</html>

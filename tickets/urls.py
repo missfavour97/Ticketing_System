@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # API
     path('tickets/create/', views.create_ticket, name='create_ticket'),
     path('tickets/', views.list_tickets, name='list_tickets'),
     path('tickets/<int:ticket_id>/', views.ticket_detail, name='ticket_detail'),
@@ -16,8 +17,15 @@ urlpatterns = [
 
     path('tickets/<int:ticket_id>/comments/create/', views.create_comment, name='create_comment'),
 
+    # UI
     path('ui/units/create/', views.create_unit_page, name='create_unit_page'),
     path('ui/units/', views.unit_list_page, name='unit_list_page'),
+
     path('ui/tickets/create/', views.create_ticket_page, name='create_ticket_page'),
-    path('ui/tickets/', views.ticket_list_page, name='ticket_list_page'), 
+    path('ui/tickets/', views.ticket_list_page, name='ticket_list_page'),
+
+    path('ui/tickets/<int:ticket_id>/comments/', views.add_comment_page, name='add_comment_page'),
+
+    path('ui/tickets/<int:ticket_id>/update-status/', views.update_ticket_status_page, name='update_ticket_status_page'),
+    path('ui/dashboard/', views.dashboard_page, name='dashboard'),
 ]
