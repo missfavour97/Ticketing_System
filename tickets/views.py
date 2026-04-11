@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.models import User
 from .models import Ticket, Unit, Topic, Comment, StatusHistory
 import json
@@ -194,3 +194,61 @@ def create_comment(request, ticket_id):
             return JsonResponse({'error': str(e)}, status=400)
 
     return JsonResponse({'error': 'Only POST method allowed'}, status=405)
+
+def create_unit_page(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        description = request.POST.get('description')
+
+        if name:
+            Unit.objects.create(
+                name=name,
+                description=description
+            )
+            return redirect('unit_list_page')
+
+    return render(request, 'tickets/create_unit.html')
+
+
+def unit_list_page(request):
+    units = Unit.objects.all()
+    return render(request, 'tickets/unit_list.html', {'units': units})
+
+
+def create_ticket_page(request):
+    units = Unit.objects.all()
+    topics = Topic.objects.all()
+    users = User.objects.all()
+
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        description = request.POST.get('description')
+        status = request.POST.get('status')
+        priority = request.POST.get('priority')
+        unit_id = request.POST.get('unit')
+        topic_id = request.POST.get('topic')
+        created_by_id = request.POST.get('created_by')
+
+        if title and description and unit_id and topic_id and created_by_id:
+            Ticket.objects.create(
+                title=title,
+                description=description,
+                status=status,
+                priority=priority,
+                unit_id=unit_id,
+                topic_id=topic_id,
+                created_by_id=created_by_id
+            )
+            return redirect('ticket_list_page')
+
+    context = {
+        'units': units,
+        'topics': topics,
+        'users': users,
+    }
+    return render(request, 'tickets/create_ticket.html', context)
+
+
+def ticket_list_page(request):
+    tickets = Ticket.objects.all()
+    return render(request, 'tickets/ticket_list.html', {'tickets': tickets})

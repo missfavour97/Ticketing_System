@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Unit</title>
+</head>
+<body>
+    <h1>Create Unit</h1>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <label>Name:</label><br>
+        <input type="text" name="name" required><br><br>
+
+        <label>Description:</label><br>
+        <textarea name="description"></textarea><br><br>
+
+        <button type="submit">Create Unit</button>
+    </form>
+
+    <br>
+    <a href="/api/ui/units/">View Units</a>
+</body>
+</html>

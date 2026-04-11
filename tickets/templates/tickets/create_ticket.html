@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Ticket</title>
+</head>
+<body>
+    <h1>Create Ticket</h1>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <label>Title:</label><br>
+        <input type="text" name="title" required><br><br>
+
+        <label>Description:</label><br>
+        <textarea name="description" required></textarea><br><br>
+
+        <label>Status:</label><br>
+        <select name="status">
+            <option value="new">New</option>
+            <option value="in_progress">In Progress</option>
+            <option value="done">Done</option>
+            <option value="closed">Closed</option>
+        </select><br><br>
+
+        <label>Priority:</label><br>
+        <select name="priority">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+        </select><br><br>
+
+        <label>Unit:</label><br>
+        <select name="unit">
+            {% for unit in units %}
+                <option value="{{ unit.id }}">{{ unit.name }}</option>
+            {% endfor %}
+        </select><br><br>
+
+        <label>Topic:</label><br>
+        <select name="topic">
+            {% for topic in topics %}
+                <option value="{{ topic.id }}">{{ topic.name }}</option>
+            {% endfor %}
+        </select><br><br>
+
+        <label>User:</label><br>
+        <select name="created_by">
+            {% for user in users %}
+                <option value="{{ user.id }}">{{ user.username }}</option>
+            {% endfor %}
+        </select><br><br>
+
+        <button type="submit">Create Ticket</button>
+    </form>
+
+    <br>
+    <a href="/api/ui/tickets/">View Tickets</a>
+</body>
+</html>

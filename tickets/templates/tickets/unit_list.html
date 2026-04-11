@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Units</title>
+</head>
+<body>
+    <h1>Units</h1>
+
+    <a href="/api/ui/units/create/">Create Unit</a>
+
+    <ul>
+        {% for unit in units %}
+            <li>{{ unit.name }} - {{ unit.description }}</li>
+        {% empty %}
+            <li>No units yet</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

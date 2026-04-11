@@ -15,4 +15,9 @@ urlpatterns = [
     path('topics/', views.list_topics, name='list_topics'),
 
     path('tickets/<int:ticket_id>/comments/create/', views.create_comment, name='create_comment'),
+
+    path('ui/units/create/', views.create_unit_page, name='create_unit_page'),
+    path('ui/units/', views.unit_list_page, name='unit_list_page'),
+    path('ui/tickets/create/', views.create_ticket_page, name='create_ticket_page'),
+    path('ui/tickets/', views.ticket_list_page, name='ticket_list_page'), 
 ]

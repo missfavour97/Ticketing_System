@@ -1,0 +1,33 @@
+{% extends 'tickets/base.html' %}
+
+{% block content %}
+
+<h1 class="mb-4">Tickets</h1>
+
+<a href="/api/ui/tickets/create/" class="btn btn-primary mb-3">Create Ticket</a>
+
+{% if tickets %}
+    {% for ticket in tickets %}
+        <div class="list-group-item mb-3 shadow-sm">
+            <h5>{{ ticket.title }}</h5>
+            <p>{{ ticket.description }}</p>
+
+            <span class="badge bg-secondary">{{ ticket.status }}</span>
+            <span class="badge bg-warning text-dark">{{ ticket.priority }}</span>
+
+            <p class="mt-2"><strong>Unit:</strong> {{ ticket.unit.name }}</p>
+            <p><strong>Topic:</strong> {{ ticket.topic.name }}</p>
+            <p><strong>Created By:</strong> {{ ticket.created_by.username }}</p>
+
+            <form method="post" action="/api/tickets/{{ ticket.id }}/update-status/" class="mt-2">
+                {% csrf_token %}
+                <button name="status" value="in_progress" class="btn btn-sm btn-primary me-2">Start</button>
+                <button name="status" value="done" class="btn btn-sm btn-success">Done</button>
+            </form>
+        </div>
+    {% endfor %}
+{% else %}
+    <p>No tickets yet</p>
+{% endif %}
+
+{% endblock %}
