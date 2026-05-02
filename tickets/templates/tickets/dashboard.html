@@ -9,7 +9,7 @@
 <div class="d-flex">
 
     <!-- SIDEBAR -->
-    <div class="text-white p-3" style="width: 250px; min-height: 100vh; background-color:#0d3b66;">
+    <div class="text-white p-3" style="width:250px; min-height:100vh; background-color:#0d3b66;">
         <h4 class="mb-4">University Support</h4>
 
         <a href="/api/ui/dashboard/" class="btn btn-light w-100 mb-2">Dashboard</a>
@@ -23,9 +23,11 @@
 
         {% elif request.user.groups.all.0.name == "Student" %}
 
-            <a href="/api/ui/tickets/" class="btn btn-outline-light w-100 mb-2">Tickets</a>
-            <a href="/api/ui/tickets/create/" class="btn btn-outline-light w-100 mb-2">Create Ticket</a>
+          <a href="/api/ui/units/" class="btn btn-outline-light w-100 mb-2">Units</a>
+          <a href="/api/ui/tickets/" class="btn btn-outline-light w-100 mb-2">Tickets</a>
+          <a href="/api/ui/tickets/create/" class="btn btn-outline-light w-100 mb-2">Create Ticket</a>
 
+            
         {% elif request.user.groups.all.0.name == "Unit Staff" %}
 
             <a href="/api/ui/tickets/" class="btn btn-outline-light w-100 mb-2">Tickets</a>
@@ -37,6 +39,7 @@
     <!-- MAIN CONTENT -->
     <div class="flex-grow-1 p-4">
 
+        <!-- TOP BAR -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1>University Support Dashboard</h1>
 
@@ -52,12 +55,53 @@
                 </span>
 
                 <form method="post" action="/api/logout/" class="d-inline">
-                 {% csrf_token %}
-                 <button type="submit" class="btn btn-outline-danger btn-sm">Logout</button>
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                        Logout
+                    </button>
                 </form>
+
             </div>
         </div>
 
+        <!-- STUDENT DASHBOARD -->
+        {% if role == "Student" %}
+
+        <div class="row">
+
+            <div class="col-md-3">
+                <div class="card p-3 text-center shadow-sm">
+                    <h3>{{ total_tickets }}</h3>
+                    <p>Tickets</p>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card p-3 text-center shadow-sm">
+                    <h3>{{ new_tickets }}</h3>
+                    <p>New</p>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card p-3 text-center shadow-sm">
+                    <h3>{{ in_progress }}</h3>
+                    <p>In Progress</p>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card p-3 text-center shadow-sm">
+                    <h3>{{ done_tickets }}</h3>
+                    <p>Done</p>
+                </div>
+            </div>
+
+        </div>
+
+        {% else %}
+
+        <!-- ADMIN / STAFF DASHBOARD -->
         <div class="row">
 
             <div class="col-md-4">
@@ -82,6 +126,8 @@
             </div>
 
         </div>
+
+        {% endif %}
 
     </div>
 

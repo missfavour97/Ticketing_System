@@ -2,10 +2,10 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login, logout
 from .models import Ticket, Unit, Topic, Comment, StatusHistory
 import json
-from django.contrib.auth import authenticate, login, logout
-from django.shortcuts import render, redirect
+
 
 def login_page(request):
     if request.method == "POST":
@@ -123,6 +123,7 @@ def update_ticket_status(request, ticket_id):
 
     return JsonResponse({'error': 'Only PUT method allowed'}, status=405)
 
+
 def update_ticket_status_page(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
 
@@ -239,8 +240,9 @@ def create_comment(request, ticket_id):
 
     return JsonResponse({'error': 'Only POST method allowed'}, status=405)
 
+
 def create_unit_page(request):
-    units = Unit.objects.all()
+    units = Unit.objects.all().order_by('name')
 
     if request.method == 'POST':
         name = request.POST.get('name')
@@ -263,72 +265,106 @@ def create_unit_page(request):
 
 
 def unit_list_page(request):
-    units = Unit.objects.all()
+    units = Unit.objects.all().order_by('name')
     return render(request, 'tickets/unit_list.html', {'units': units})
 
 
 def create_ticket_page(request):
-    units = Unit.objects.all()
-    topics = Topic.objects.all()
-    users = User.objects.all()
+    if not request.user.is_authenticated:
+        return redirect('/api/login/')
+
+    units = Unit.objects.all().order_by('name')
+    topics = Topic.objects.all().order_by('name')
 
     if request.method == 'POST':
         title = request.POST.get('title')
         description = request.POST.get('description')
-        status = request.POST.get('status')
         priority = request.POST.get('priority')
         unit_id = request.POST.get('unit')
         topic_id = request.POST.get('topic')
-        created_by_id = request.POST.get('created_by')
 
-        if title and description and unit_id and topic_id and created_by_id:
+        if title and description and priority and unit_id and topic_id:
             Ticket.objects.create(
                 title=title,
                 description=description,
-                status=status,
+                status='new',
                 priority=priority,
                 unit_id=unit_id,
                 topic_id=topic_id,
-                created_by_id=created_by_id
+                created_by=request.user
             )
-            return redirect('ticket_list_page')
 
-    context = {
+            return redirect('/api/ui/tickets/create/?success=1')
+
+    success = request.GET.get('success')
+
+    return render(request, 'tickets/create_ticket.html', {
         'units': units,
         'topics': topics,
-        'users': users,
-    }
-    return render(request, 'tickets/create_ticket.html', context)
+        'success': success
+    })
 
 
 def ticket_list_page(request):
-    tickets = Ticket.objects.all().prefetch_related('comments__user')
+    if not request.user.is_authenticated:
+        return redirect('/api/login/')
+
+    tickets = Ticket.objects.all().prefetch_related('comments__user').order_by('-created_at')
     users = User.objects.all()
-    return render(request, 'tickets/ticket_list.html', {'tickets': tickets, 'users': users})
+
+    return render(request, 'tickets/ticket_list.html', {
+        'tickets': tickets,
+        'users': users
+    })
+
 
 def add_comment_page(request, ticket_id):
+    if not request.user.is_authenticated:
+        return redirect('/api/login/')
+
     ticket = get_object_or_404(Ticket, id=ticket_id)
 
     if request.method == 'POST':
         content = request.POST.get('content')
-        user_id = request.POST.get('user')
 
-        if content and user_id:
+        if content:
             Comment.objects.create(
                 ticket=ticket,
-                user_id=user_id,
+                user=request.user,
                 message=content
             )
 
     return redirect('ticket_list_page')
 
+
 def dashboard_page(request):
+    if not request.user.is_authenticated:
+        return redirect('/api/login/')
+
+    role = request.user.groups.first().name if request.user.groups.exists() else ""
+
+    if role == "Student":
+        total_tickets = Ticket.objects.filter(created_by=request.user).count()
+        new_tickets = Ticket.objects.filter(created_by=request.user, status='new').count()
+        in_progress = Ticket.objects.filter(created_by=request.user, status='in_progress').count()
+        done_tickets = Ticket.objects.filter(created_by=request.user, status='done').count()
+
+        return render(request, 'tickets/dashboard.html', {
+            'role': role,
+            'total_tickets': total_tickets,
+            'new_tickets': new_tickets,
+            'in_progress': in_progress,
+            'done_tickets': done_tickets,
+        })
+
+    # Admin / Staff default
     total_units = Unit.objects.count()
-    total_tickets = Ticket.objects.count()
     total_topics = Topic.objects.count()
+    total_tickets = Ticket.objects.count()
 
     return render(request, 'tickets/dashboard.html', {
+        'role': role,
         'total_units': total_units,
+        'total_topics': total_topics,
         'total_tickets': total_tickets,
-        'total_topics': total_topics
     })

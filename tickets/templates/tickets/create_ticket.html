@@ -25,62 +25,103 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1>Create Support Ticket</h1>
 
+            {% if success %}
+          <div class="alert alert-success alert-dismissible fade show" role="alert">
+              Ticket created successfully!
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+{% endif %}
+
             <div class="d-flex align-items-center">
                 <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png"
                      class="me-2 border rounded"
-                     width="45" height="45">
+                     width="45"
+                     height="45">
 
                 <span class="me-3 fw-bold">
                     {{ request.user.username|default:"Guest" }}
                 </span>
 
-                <a href="/api/logout/"
+                <a href="/api/logout/" class="btn btn-outline-danger btn-sm">
+                    Logout
+                </a>
             </div>
         </div>
+
+        <!-- ERROR -->
+        {% if error %}
+        <div class="alert alert-danger">
+            {{ error }}
+        </div>
+        {% endif %}
 
         <!-- FORM -->
         <div class="card p-4 shadow-sm">
             <form method="post">
                 {% csrf_token %}
 
+                <!-- TITLE -->
                 <div class="mb-3">
                     <label class="form-label">Title</label>
-                    <input type="text" name="title" class="form-control">
+                    <input type="text"
+                           name="title"
+                           class="form-control"
+                           required>
                 </div>
 
+                <!-- DESCRIPTION -->
                 <div class="mb-3">
                     <label class="form-label">Description</label>
-                    <textarea name="description" class="form-control" rows="4"></textarea>
+                    <textarea name="description"
+                              class="form-control"
+                              rows="4"
+                              required></textarea>
                 </div>
 
+                <!-- UNIT -->
                 <div class="mb-3">
                     <label class="form-label">Unit</label>
-                    <select name="unit" class="form-control">
+                    <select name="unit" class="form-select" required>
+                        <option value="">Select Unit</option>
+
                         {% for unit in units %}
-                            <option value="{{ unit.id }}">{{ unit.name }}</option>
+                            <option value="{{ unit.id }}">
+                                {{ unit.name }}
+                            </option>
                         {% endfor %}
                     </select>
                 </div>
 
+                <!-- TOPIC -->
                 <div class="mb-3">
                     <label class="form-label">Topic</label>
-                    <select name="topic" class="form-control">
+                    <select name="topic" class="form-select" required>
+                        <option value="">Select Topic</option>
+
                         {% for topic in topics %}
-                            <option value="{{ topic.id }}">{{ topic.name }}</option>
+                            <option value="{{ topic.id }}">
+                                {{ topic.name }} - {{ topic.unit.name }}
+                            </option>
                         {% endfor %}
                     </select>
                 </div>
 
+                <!-- PRIORITY -->
                 <div class="mb-3">
                     <label class="form-label">Priority</label>
-                    <select name="priority" class="form-control">
+                    <select name="priority" class="form-select" required>
+                        <option value="">Select Priority</option>
                         <option value="low">Low</option>
                         <option value="medium">Medium</option>
                         <option value="high">High</option>
                     </select>
                 </div>
 
-                <button type="submit" class="btn btn-primary">Create Ticket</button>
+                <!-- BUTTON -->
+                <button type="submit" class="btn btn-primary">
+                    Create Ticket
+                </button>
+
             </form>
         </div>
 
