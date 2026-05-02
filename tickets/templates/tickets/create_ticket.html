@@ -2,59 +2,91 @@
 <html>
 <head>
     <title>Create Ticket</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
-    <h1>Create Ticket</h1>
+<body class="bg-light">
 
-    <form method="post">
-        {% csrf_token %}
+<div class="d-flex">
 
-        <label>Title:</label><br>
-        <input type="text" name="title" required><br><br>
+    <!-- SIDEBAR -->
+    <div class="text-white p-3" style="width:250px; min-height:100vh; background-color:#0d3b66;">
+        <h4 class="mb-4">University Support</h4>
 
-        <label>Description:</label><br>
-        <textarea name="description" required></textarea><br><br>
+        <a href="/api/ui/dashboard/" class="btn btn-outline-light w-100 mb-2">Dashboard</a>
+        <a href="/api/ui/units/" class="btn btn-outline-light w-100 mb-2">Units</a>
+        <a href="/api/ui/tickets/" class="btn btn-outline-light w-100 mb-2">Tickets</a>
+        <a href="/api/ui/tickets/create/" class="btn btn-light w-100 mb-2">Create Ticket</a>
+    </div>
 
-        <label>Status:</label><br>
-        <select name="status">
-            <option value="new">New</option>
-            <option value="in_progress">In Progress</option>
-            <option value="done">Done</option>
-            <option value="closed">Closed</option>
-        </select><br><br>
+    <!-- MAIN -->
+    <div class="flex-grow-1 p-4">
 
-        <label>Priority:</label><br>
-        <select name="priority">
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-        </select><br><br>
+        <!-- TOP BAR -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Create Support Ticket</h1>
 
-        <label>Unit:</label><br>
-        <select name="unit">
-            {% for unit in units %}
-                <option value="{{ unit.id }}">{{ unit.name }}</option>
-            {% endfor %}
-        </select><br><br>
+            <div class="d-flex align-items-center">
+                <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png"
+                     class="me-2 border rounded"
+                     width="45" height="45">
 
-        <label>Topic:</label><br>
-        <select name="topic">
-            {% for topic in topics %}
-                <option value="{{ topic.id }}">{{ topic.name }}</option>
-            {% endfor %}
-        </select><br><br>
+                <span class="me-3 fw-bold">
+                    {{ request.user.username|default:"Guest" }}
+                </span>
 
-        <label>User:</label><br>
-        <select name="created_by">
-            {% for user in users %}
-                <option value="{{ user.id }}">{{ user.username }}</option>
-            {% endfor %}
-        </select><br><br>
+                <a href="/admin/logout/" class="btn btn-outline-danger btn-sm">Logout</a>
+            </div>
+        </div>
 
-        <button type="submit">Create Ticket</button>
-    </form>
+        <!-- FORM -->
+        <div class="card p-4 shadow-sm">
+            <form method="post">
+                {% csrf_token %}
 
-    <br>
-    <a href="/api/ui/tickets/">View Tickets</a>
+                <div class="mb-3">
+                    <label class="form-label">Title</label>
+                    <input type="text" name="title" class="form-control">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Description</label>
+                    <textarea name="description" class="form-control" rows="4"></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Unit</label>
+                    <select name="unit" class="form-control">
+                        {% for unit in units %}
+                            <option value="{{ unit.id }}">{{ unit.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Topic</label>
+                    <select name="topic" class="form-control">
+                        {% for topic in topics %}
+                            <option value="{{ topic.id }}">{{ topic.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Priority</label>
+                    <select name="priority" class="form-control">
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Create Ticket</button>
+            </form>
+        </div>
+
+    </div>
+
+</div>
+
 </body>
 </html>

@@ -6,4 +6,5 @@ urlpatterns = [
     path('', lambda request: redirect('/api/ui/dashboard/')),
     path('admin/', admin.site.urls),
     path('api/', include('tickets.urls')),
+   
 ]

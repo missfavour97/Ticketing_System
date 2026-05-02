@@ -13,9 +13,25 @@
         <h4 class="mb-4">University Support</h4>
 
         <a href="/api/ui/dashboard/" class="btn btn-light w-100 mb-2">Dashboard</a>
-        <a href="/api/ui/units/" class="btn btn-outline-light w-100 mb-2">Units</a>
-        <a href="/api/ui/tickets/" class="btn btn-outline-light w-100 mb-2">Tickets</a>
-        <a href="/api/ui/tickets/create/" class="btn btn-outline-light w-100 mb-2">Create Ticket</a>
+
+        {% if request.user.groups.all.0.name == "Admin" %}
+
+            <a href="/api/ui/units/" class="btn btn-outline-light w-100 mb-2">Units</a>
+            <a href="/api/ui/units/create/" class="btn btn-outline-light w-100 mb-2">Create Unit</a>
+            <a href="/api/ui/tickets/" class="btn btn-outline-light w-100 mb-2">Tickets</a>
+            <a href="/api/ui/tickets/create/" class="btn btn-outline-light w-100 mb-2">Create Ticket</a>
+
+        {% elif request.user.groups.all.0.name == "Student" %}
+
+            <a href="/api/ui/tickets/" class="btn btn-outline-light w-100 mb-2">Tickets</a>
+            <a href="/api/ui/tickets/create/" class="btn btn-outline-light w-100 mb-2">Create Ticket</a>
+
+        {% elif request.user.groups.all.0.name == "Unit Staff" %}
+
+            <a href="/api/ui/tickets/" class="btn btn-outline-light w-100 mb-2">Tickets</a>
+
+        {% endif %}
+
     </div>
 
     <!-- MAIN CONTENT -->
@@ -24,11 +40,21 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1>University Support Dashboard</h1>
 
-            <div>
-                <span class="me-3">
-                    Profile: {{ request.user.username|default:"Guest" }}
+            <div class="d-flex align-items-center">
+
+                <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png"
+                     class="me-2 border rounded"
+                     width="45"
+                     height="45">
+
+                <span class="me-3 fw-bold">
+                    {{ request.user.username|default:"Guest" }}
                 </span>
-                <a href="/admin/logout/" class="btn btn-outline-danger btn-sm">Logout</a>
+
+                <form method="post" action="/admin/logout/" class="d-inline">
+                 {% csrf_token %}
+                 <button type="submit" class="btn btn-outline-danger btn-sm">Logout</button>
+                </form>
             </div>
         </div>
 

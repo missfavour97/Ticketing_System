@@ -28,4 +28,5 @@ urlpatterns = [
     path('ui/tickets/<int:ticket_id>/update-status/', views.update_ticket_status_page, name='update_ticket_status_page'),
 
     path('ui/dashboard/', views.dashboard_page, name='dashboard'),
+    
 ]
