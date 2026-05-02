@@ -51,7 +51,7 @@
                     {{ request.user.username|default:"Guest" }}
                 </span>
 
-                <form method="post" action="/admin/logout/" class="d-inline">
+                <form method="post" action="/api/logout/" class="d-inline">
                  {% csrf_token %}
                  <button type="submit" class="btn btn-outline-danger btn-sm">Logout</button>
                 </form>

@@ -29,4 +29,6 @@ urlpatterns = [
 
     path('ui/dashboard/', views.dashboard_page, name='dashboard'),
     
+    path('login/', views.login_page, name='login_page'),
+    path('logout/', views.logout_page, name='logout_page'),
 ]
