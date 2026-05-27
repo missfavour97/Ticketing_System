@@ -1,14 +1,58 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Login</title>
+    <title>Login | University Support</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
+    {% if recaptcha_enabled %}
+        <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    {% endif %}
+    <style>
+        body {
+            min-height: 100vh;
+            background: #f4f6f8;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+        }
 
-<div class="container mt-5" style="max-width: 400px;">
-    <div class="card p-4 shadow-sm">
-        <h3 class="mb-3 text-center">University Support Login</h3>
+        .login-shell {
+            width: min(940px, 100%);
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            background: #fff;
+            border: 1px solid #d8dee6;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .login-panel {
+            padding: 36px;
+        }
+
+        .demo-panel {
+            background: #17324d;
+            color: #fff;
+            padding: 36px;
+        }
+
+        .demo-panel code {
+            color: #fff;
+        }
+
+        @media (max-width: 800px) {
+            .login-shell {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="login-shell">
+    <section class="login-panel">
+        <h1 class="h3 mb-2">University Support</h1>
+        <p class="text-muted mb-4">Sign in to manage service requests.</p>
 
         {% if error %}
             <div class="alert alert-danger">{{ error }}</div>
@@ -18,19 +62,58 @@
             {% csrf_token %}
 
             <div class="mb-3">
-                <label>Username</label>
-                <input type="text" name="username" class="form-control">
+                <label class="form-label" for="username">Username</label>
+                <input id="username" type="text" name="username" class="form-control" required>
             </div>
 
             <div class="mb-3">
-                <label>Password</label>
-                <input type="password" name="password" class="form-control">
+                <label class="form-label" for="password">Password</label>
+                <input id="password" type="password" name="password" class="form-control" required>
             </div>
+
+            {% if recaptcha_enabled %}
+                <div class="mb-3">
+                    {% if recaptcha_mode == "google" %}
+                        <div class="g-recaptcha" data-sitekey="{{ recaptcha_site_key }}"></div>
+                    {% else %}
+                        <div class="border rounded p-3 bg-light">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="demo-recaptcha" name="demo-recaptcha" value="checked" required>
+                                <label class="form-check-label fw-semibold" for="demo-recaptcha">
+                                    I am not a robot
+                                </label>
+                            </div>
+                            <div class="text-muted small mt-2">
+                                Demo reCAPTCHA for classroom testing
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
 
             <button type="submit" class="btn btn-primary w-100">Login</button>
         </form>
-    </div>
-</div>
+    </section>
 
+    <aside class="demo-panel">
+        <h2 class="h5 mb-3">Demo Accounts</h2>
+        <p class="mb-3">Run <code>python manage.py seed_demo</code> to create these accounts.</p>
+
+        <div class="mb-3">
+            <div class="fw-semibold">Admin</div>
+            <code>admin_demo / demo12345</code>
+        </div>
+
+        <div class="mb-3">
+            <div class="fw-semibold">Unit Staff</div>
+            <code>staff_it / demo12345</code>
+        </div>
+
+        <div>
+            <div class="fw-semibold">Student</div>
+            <code>student_ada / demo12345</code>
+        </div>
+    </aside>
+</div>
 </body>
 </html>

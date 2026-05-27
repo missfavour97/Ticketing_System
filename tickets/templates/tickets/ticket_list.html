@@ -1,65 +1,108 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Support Tickets</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
+{% extends "tickets/base.html" %}
 
-<div class="d-flex">
+{% block title %}Tickets | University Support{% endblock %}
+{% block page_title %}Ticket Queue{% endblock %}
 
-    <!-- SIDEBAR -->
-    <div class="text-white p-3" style="width:250px; min-height:100vh; background-color:#0d3b66;">
-        <h4 class="mb-4">University Support</h4>
-
-        <a href="/api/ui/dashboard/" class="btn btn-outline-light w-100 mb-2">Dashboard</a>
-        <a href="/api/ui/units/" class="btn btn-outline-light w-100 mb-2">Units</a>
-        <a href="/api/ui/tickets/" class="btn btn-light w-100 mb-2">Tickets</a>
-        <a href="/api/ui/tickets/create/" class="btn btn-outline-light w-100 mb-2">Create Ticket</a>
-    </div>
-
-    <!-- MAIN -->
-    <div class="flex-grow-1 p-4">
-
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>University Support Tickets</h1>
-
-            <div class="d-flex align-items-center">
-                <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png"
-                     class="me-2 border rounded"
-                     width="45" height="45">
-
-                <span class="me-3 fw-bold">
-                    {{ request.user.username|default:"Guest" }}
-                </span>
-
-                <form method="post" action="/api/logout/" class="d-inline">
-                   {% csrf_token %}
-                   <button type="submit" class="btn btn-outline-danger btn-sm">Logout</button>
-                </form>
-            </div>
+{% block content %}
+<form method="get" class="surface mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-lg-4">
+            <label class="form-label" for="q">Search</label>
+            <input id="q" type="search" name="q" value="{{ filters.q }}" class="form-control" placeholder="Title, requester, unit, topic">
         </div>
 
-        {% if tickets %}
-            {% for ticket in tickets %}
-                <div class="card mb-3 p-3 shadow-sm">
-                    <h5>{{ ticket.title }}</h5>
-                    <p>{{ ticket.description }}</p>
+        <div class="col-sm-6 col-lg-2">
+            <label class="form-label" for="status">Status</label>
+            <select id="status" name="status" class="form-select">
+                <option value="">All</option>
+                {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
-                    <span class="badge bg-secondary">{{ ticket.status }}</span>
-                    <span class="badge bg-warning text-dark">{{ ticket.priority }}</span>
+        <div class="col-sm-6 col-lg-2">
+            <label class="form-label" for="priority">Priority</label>
+            <select id="priority" name="priority" class="form-select">
+                <option value="">All</option>
+                {% for value, label in priority_choices %}
+                    <option value="{{ value }}" {% if filters.priority == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
 
-                    <p class="mt-2"><strong>Unit:</strong> {{ ticket.unit.name }}</p>
-                    <p><strong>Topic:</strong> {{ ticket.topic.name }}</p>
-                </div>
-            {% endfor %}
-        {% else %}
-            <p>No tickets available.</p>
+        <div class="col-sm-6 col-lg-2">
+            <label class="form-label" for="unit">Unit</label>
+            <select id="unit" name="unit" class="form-select">
+                <option value="">All</option>
+                {% for unit in units %}
+                    <option value="{{ unit.id }}" {% if filters.unit == unit.id|stringformat:"s" %}selected{% endif %}>{{ unit.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        {% if can_manage %}
+            <div class="col-sm-6 col-lg-2">
+                <label class="form-label" for="assigned_to">Assignee</label>
+                <select id="assigned_to" name="assigned_to" class="form-select">
+                    <option value="">All</option>
+                    <option value="unassigned" {% if filters.assigned_to == "unassigned" %}selected{% endif %}>Unassigned</option>
+                    {% for user in staff_users %}
+                        <option value="{{ user.id }}" {% if filters.assigned_to == user.id|stringformat:"s" %}selected{% endif %}>{{ user.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
         {% endif %}
 
+        <div class="col-12">
+            <button type="submit" class="btn btn-primary">Apply filters</button>
+            <a href="/api/ui/tickets/" class="btn btn-outline-secondary">Reset</a>
+            <a href="/api/ui/tickets/create/" class="btn btn-outline-primary">New ticket</a>
+        </div>
     </div>
+</form>
 
-</div>
-
-</body>
-</html>
+<section class="surface">
+    {% if tickets %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Ticket</th>
+                        <th>Status</th>
+                        <th>Priority</th>
+                        <th>Requester</th>
+                        <th>Assignee</th>
+                        <th>Activity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ticket in tickets %}
+                        <tr>
+                            <td>
+                                <a href="/api/ui/tickets/{{ ticket.id }}/" class="fw-semibold text-decoration-none">
+                                    {{ ticket.ticket_number }} - {{ ticket.title }}
+                                </a>
+                                <div class="muted-small">{{ ticket.unit.name }} / {{ ticket.topic.name }}</div>
+                                {% if ticket.is_sla_breached %}
+                                    <span class="badge text-bg-danger mt-1">SLA breached</span>
+                                {% endif %}
+                            </td>
+                            <td><span class="badge {{ ticket.status_badge_class }}">{{ ticket.get_status_display }}</span></td>
+                            <td><span class="badge {{ ticket.priority_badge_class }}">{{ ticket.get_priority_display }}</span></td>
+                            <td>{{ ticket.created_by.username }}</td>
+                            <td>{{ ticket.assigned_to.username|default:"Unassigned" }}</td>
+                            <td>
+                                <div>{{ ticket.updated_at|date:"M d, H:i" }}</div>
+                                <div class="muted-small">{{ ticket.comment_count }} comments</div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="mb-0 text-muted">No tickets match the current filters.</p>
+    {% endif %}
+</section>
+{% endblock %}

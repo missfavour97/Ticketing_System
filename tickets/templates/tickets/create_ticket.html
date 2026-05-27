@@ -1,133 +1,63 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Create Ticket</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
+{% extends "tickets/base.html" %}
 
-<div class="d-flex">
+{% block title %}New Ticket | University Support{% endblock %}
+{% block page_title %}New Support Ticket{% endblock %}
 
-    <!-- SIDEBAR -->
-    <div class="text-white p-3" style="width:250px; min-height:100vh; background-color:#0d3b66;">
-        <h4 class="mb-4">University Support</h4>
-
-        <a href="/api/ui/dashboard/" class="btn btn-outline-light w-100 mb-2">Dashboard</a>
-        <a href="/api/ui/units/" class="btn btn-outline-light w-100 mb-2">Units</a>
-        <a href="/api/ui/tickets/" class="btn btn-outline-light w-100 mb-2">Tickets</a>
-        <a href="/api/ui/tickets/create/" class="btn btn-light w-100 mb-2">Create Ticket</a>
-    </div>
-
-    <!-- MAIN -->
-    <div class="flex-grow-1 p-4">
-
-        <!-- TOP BAR -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>Create Support Ticket</h1>
-
-            {% if success %}
-          <div class="alert alert-success alert-dismissible fade show" role="alert">
-              Ticket created successfully!
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-          </div>
+{% block content %}
+{% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
 {% endif %}
 
-            <div class="d-flex align-items-center">
-                <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png"
-                     class="me-2 border rounded"
-                     width="45"
-                     height="45">
+<section class="surface">
+    <form method="post">
+        {% csrf_token %}
 
-                <span class="me-3 fw-bold">
-                    {{ request.user.username|default:"Guest" }}
-                </span>
+        <div class="row g-3">
+            <div class="col-12">
+                <label class="form-label" for="title">Title</label>
+                <input id="title" type="text" name="title" class="form-control" required>
+            </div>
 
-                <a href="/api/logout/" class="btn btn-outline-danger btn-sm">
-                    Logout
-                </a>
+            <div class="col-md-6">
+                <label class="form-label" for="unit">Unit</label>
+                <select id="unit" name="unit" class="form-select" required>
+                    <option value="">Select unit</option>
+                    {% for unit in units %}
+                        <option value="{{ unit.id }}">{{ unit.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label" for="topic">Topic</label>
+                <select id="topic" name="topic" class="form-select" required>
+                    <option value="">Select topic</option>
+                    {% for topic in topics %}
+                        <option value="{{ topic.id }}">{{ topic.unit.name }} - {{ topic.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label" for="priority">Priority</label>
+                <select id="priority" name="priority" class="form-select" required>
+                    <option value="">Select priority</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                </select>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label" for="description">Description</label>
+                <textarea id="description" name="description" class="form-control" rows="6" required></textarea>
+            </div>
+
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">Submit ticket</button>
+                <a href="/api/ui/tickets/" class="btn btn-outline-secondary">Cancel</a>
             </div>
         </div>
-
-        <!-- ERROR -->
-        {% if error %}
-        <div class="alert alert-danger">
-            {{ error }}
-        </div>
-        {% endif %}
-
-        <!-- FORM -->
-        <div class="card p-4 shadow-sm">
-            <form method="post">
-                {% csrf_token %}
-
-                <!-- TITLE -->
-                <div class="mb-3">
-                    <label class="form-label">Title</label>
-                    <input type="text"
-                           name="title"
-                           class="form-control"
-                           required>
-                </div>
-
-                <!-- DESCRIPTION -->
-                <div class="mb-3">
-                    <label class="form-label">Description</label>
-                    <textarea name="description"
-                              class="form-control"
-                              rows="4"
-                              required></textarea>
-                </div>
-
-                <!-- UNIT -->
-                <div class="mb-3">
-                    <label class="form-label">Unit</label>
-                    <select name="unit" class="form-select" required>
-                        <option value="">Select Unit</option>
-
-                        {% for unit in units %}
-                            <option value="{{ unit.id }}">
-                                {{ unit.name }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <!-- TOPIC -->
-                <div class="mb-3">
-                    <label class="form-label">Topic</label>
-                    <select name="topic" class="form-select" required>
-                        <option value="">Select Topic</option>
-
-                        {% for topic in topics %}
-                            <option value="{{ topic.id }}">
-                                {{ topic.name }} - {{ topic.unit.name }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <!-- PRIORITY -->
-                <div class="mb-3">
-                    <label class="form-label">Priority</label>
-                    <select name="priority" class="form-select" required>
-                        <option value="">Select Priority</option>
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                    </select>
-                </div>
-
-                <!-- BUTTON -->
-                <button type="submit" class="btn btn-primary">
-                    Create Ticket
-                </button>
-
-            </form>
-        </div>
-
-    </div>
-
-</div>
-
-</body>
-</html>
+    </form>
+</section>
+{% endblock %}

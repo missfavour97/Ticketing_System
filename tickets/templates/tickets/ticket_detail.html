@@ -1,0 +1,146 @@
+{% extends "tickets/base.html" %}
+
+{% block title %}{{ ticket.ticket_number }} | University Support{% endblock %}
+{% block page_title %}{{ ticket.ticket_number }}{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+        <h2 class="h3 mb-2">{{ ticket.title }}</h2>
+        <span class="badge {{ ticket.status_badge_class }}">{{ ticket.get_status_display }}</span>
+        <span class="badge {{ ticket.priority_badge_class }}">{{ ticket.get_priority_display }}</span>
+        {% if ticket.is_sla_breached %}
+            <span class="badge text-bg-danger">SLA breached</span>
+        {% endif %}
+    </div>
+    <a href="/api/ui/tickets/" class="btn btn-outline-secondary">Back to queue</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <section class="surface mb-4">
+            <h3 class="h5">Request Details</h3>
+            <p class="mb-0">{{ ticket.description|linebreaksbr }}</p>
+        </section>
+
+        <section class="surface mb-4">
+            <h3 class="h5 mb-3">Comments</h3>
+
+            {% if comments %}
+                <div class="vstack gap-3 mb-4">
+                    {% for comment in comments %}
+                        <div class="border rounded p-3">
+                            <div class="d-flex justify-content-between gap-3 mb-2">
+                                <strong>{{ comment.user.username }}</strong>
+                                <span class="muted-small">{{ comment.created_at|date:"M d, Y H:i" }}</span>
+                            </div>
+                            <div>{{ comment.message|linebreaksbr }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted">No comments yet.</p>
+            {% endif %}
+
+            <form method="post" action="/api/ui/tickets/{{ ticket.id }}/comments/">
+                {% csrf_token %}
+                <label class="form-label" for="content">Add comment</label>
+                <textarea id="content" name="content" class="form-control mb-3" rows="4" required></textarea>
+                <button type="submit" class="btn btn-primary">Post comment</button>
+            </form>
+        </section>
+    </div>
+
+    <div class="col-lg-4">
+        <section class="surface mb-4">
+            <h3 class="h5 mb-3">Ticket Info</h3>
+            <dl class="row mb-0">
+                <dt class="col-5">Requester</dt>
+                <dd class="col-7">{{ ticket.created_by.username }}</dd>
+
+                <dt class="col-5">Assignee</dt>
+                <dd class="col-7">{{ ticket.assigned_to.username|default:"Unassigned" }}</dd>
+
+                <dt class="col-5">Unit</dt>
+                <dd class="col-7">{{ ticket.unit.name }}</dd>
+
+                <dt class="col-5">Topic</dt>
+                <dd class="col-7">{{ ticket.topic.name }}</dd>
+
+                <dt class="col-5">Created</dt>
+                <dd class="col-7">{{ ticket.created_at|date:"M d, Y H:i" }}</dd>
+
+                <dt class="col-5">SLA target</dt>
+                <dd class="col-7">{{ ticket.sla_due_at|date:"M d, Y H:i" }}</dd>
+            </dl>
+        </section>
+
+        <section class="surface mb-4">
+            <h3 class="h5 mb-3">Update Ticket</h3>
+
+            {% if can_manage %}
+                <form method="post" action="/api/ui/tickets/{{ ticket.id }}/update-status/">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label" for="status">Status</label>
+                        <select id="status" name="status" class="form-select">
+                            {% for value, label in status_choices %}
+                                <option value="{{ value }}" {% if ticket.status == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="priority">Priority</label>
+                        <select id="priority" name="priority" class="form-select">
+                            {% for value, label in priority_choices %}
+                                <option value="{{ value }}" {% if ticket.priority == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="assigned_to">Assignee</label>
+                        <select id="assigned_to" name="assigned_to" class="form-select">
+                            <option value="">Unassigned</option>
+                            {% for user in staff_users %}
+                                <option value="{{ user.id }}" {% if ticket.assigned_to_id == user.id %}selected{% endif %}>{{ user.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                </form>
+            {% elif ticket.is_open %}
+                <form method="post" action="/api/ui/tickets/{{ ticket.id }}/update-status/">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="withdrawn">
+                    <button type="submit" class="btn btn-outline-danger">Withdraw ticket</button>
+                </form>
+            {% else %}
+                <p class="mb-0 text-muted">This ticket is closed.</p>
+            {% endif %}
+        </section>
+
+        <section class="surface">
+            <h3 class="h5 mb-3">Status History</h3>
+
+            {% if history %}
+                <div class="vstack gap-3">
+                    {% for item in history %}
+                        <div>
+                            <div class="fw-semibold">{{ item.old_status_label }} to {{ item.new_status_label }}</div>
+                            <div class="muted-small">
+                                {{ item.changed_by.username }} on {{ item.changed_at|date:"M d, Y H:i" }}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="mb-0 text-muted">No status changes yet.</p>
+            {% endif %}
+        </section>
+    </div>
+</div>
+{% endblock %}

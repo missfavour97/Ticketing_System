@@ -1,32 +1,39 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Create Unit</title>
-</head>
-<body>
-    <h1>Create Unit</h1>
+{% extends "tickets/base.html" %}
 
+{% block title %}New Unit | University Support{% endblock %}
+{% block page_title %}New Support Unit{% endblock %}
+
+{% block content %}
+<section class="surface">
     <form method="post">
         {% csrf_token %}
 
-        <label>Name:</label><br>
-        <input type="text" name="name" required><br><br>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label" for="name">Name</label>
+                <input id="name" type="text" name="name" class="form-control" required>
+            </div>
 
-        <label>Description:</label><br>
-        <textarea name="description"></textarea><br><br>
+            <div class="col-md-6">
+                <label class="form-label" for="parent">Parent unit</label>
+                <select id="parent" name="parent" class="form-select">
+                    <option value="">No parent</option>
+                    {% for unit in units %}
+                        <option value="{{ unit.id }}">{{ unit.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
-        <label>Parent Unit:</label><br>
-        <select name="parent">
-            <option value="">No Parent</option>
-            {% for unit in units %}
-                <option value="{{ unit.id }}">{{ unit.name }}</option>
-            {% endfor %}
-        </select><br><br>
+            <div class="col-12">
+                <label class="form-label" for="description">Description</label>
+                <textarea id="description" name="description" class="form-control" rows="5"></textarea>
+            </div>
 
-        <button type="submit">Create Unit</button>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">Create unit</button>
+                <a href="/api/ui/units/" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </div>
     </form>
-
-    <br>
-    <a href="/api/ui/units/">View Units</a>
-</body>
-</html>
+</section>
+{% endblock %}
