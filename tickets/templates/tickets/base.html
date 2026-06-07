@@ -203,10 +203,16 @@
         <div class="topbar">
             <div>
                 <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
-                <div class="muted-small">
-                    {{ request.user.username }}
-                    {% if role %}<span class="ms-2 badge text-bg-light">{{ role }}</span>{% endif %}
-                </div>
+                {% if not hide_user_identity %}
+                    <div class="muted-small">
+                        {{ request.user.username }}
+                        {% if role %}<span class="ms-2 badge text-bg-light">{{ role }}</span>{% endif %}
+                    </div>
+                {% elif role %}
+                    <div class="muted-small">
+                        <span class="badge text-bg-light">{{ role }}</span>
+                    </div>
+                {% endif %}
             </div>
 
             <form method="post" action="/api/logout/">

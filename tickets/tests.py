@@ -288,6 +288,21 @@ class TicketsBoardTests(TestCase):
         self.assertContains(response, 'Wi-Fi lab issue')
         self.assertContains(response, 'Course registration fixed')
 
+    def test_board_hides_admin_demo_username(self):
+        User.objects.create_user(
+            username='admin_demo',
+            password='demo12345',
+            is_staff=True,
+        )
+        self.create_ticket('Password reset is broken', 'new')
+        self.client.login(username='admin_demo', password='demo12345')
+
+        response = self.client.get('/api/ui/tickets/board/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Tickets Board')
+        self.assertNotContains(response, 'admin_demo')
+
 
 class TicketVisibilityTests(TestCase):
     def setUp(self):

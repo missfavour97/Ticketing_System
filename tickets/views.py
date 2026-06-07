@@ -580,6 +580,7 @@ def tickets_board_page(request):
 
     return render(request, 'tickets/tickets_board.html', {
         'columns': ticket_board_columns_for(tickets),
+        'hide_user_identity': True,
         'role': get_user_role(request.user),
     })
 
