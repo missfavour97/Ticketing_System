@@ -26,6 +26,8 @@ urlpatterns = [
 
     path('ui/tickets/<int:ticket_id>/', views.ticket_detail_page, name='ticket_detail_page'),
     path('ui/tickets/<int:ticket_id>/comments/', views.add_comment_page, name='add_comment_page'),
+    path('ui/tickets/<int:ticket_id>/attachments/', views.add_attachment_page, name='add_attachment_page'),
+    path('ui/tickets/<int:ticket_id>/route/', views.route_ticket_page, name='route_ticket_page'),
     path('ui/tickets/<int:ticket_id>/update-status/', views.update_ticket_status_page, name='update_ticket_status_page'),
 
     path('ui/dashboard/', views.dashboard_page, name='dashboard'),

@@ -11,6 +11,7 @@ class TicketAdmin(admin.ModelAdmin):
         'priority',
         'unit',
         'assigned_to',
+        'contact_email',
         'created_by',
         'updated_at',
     )
@@ -22,4 +23,10 @@ admin.site.register(Unit)
 admin.site.register(Topic)
 admin.site.register(Comment)
 admin.site.register(StatusHistory)
-admin.site.register(Attachment)
+
+
+@admin.register(Attachment)
+class AttachmentAdmin(admin.ModelAdmin):
+    list_display = ('filename', 'ticket', 'uploaded_by', 'uploaded_at')
+    list_filter = ('uploaded_at',)
+    search_fields = ('ticket__title', 'file')

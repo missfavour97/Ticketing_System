@@ -1,3 +1,5 @@
+import os
+
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
@@ -56,6 +58,7 @@ class Ticket(models.Model):
 
     title = models.CharField(max_length=255)
     description = models.TextField()
+    contact_email = models.EmailField(blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new')
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
 
@@ -102,6 +105,10 @@ class Ticket(models.Model):
             'low': 'bg-success',
         }.get(self.priority, 'bg-secondary')
 
+    @property
+    def notification_email(self):
+        return self.contact_email or self.created_by.email
+
 
 class Comment(models.Model):
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='comments')
@@ -115,11 +122,22 @@ class Comment(models.Model):
 
 class Attachment(models.Model):
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='attachments')
+    uploaded_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name='uploaded_attachments',
+        null=True,
+        blank=True,
+    )
     file = models.FileField(upload_to='attachments/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Attachment for {self.ticket.title}"
+
+    @property
+    def filename(self):
+        return os.path.basename(self.file.name)
 
 
 class StatusHistory(models.Model):

@@ -23,7 +23,12 @@ class Command(BaseCommand):
         staff_it = self.create_user('staff_it', 'Unit Staff', groups, first_name='Ife')
         staff_registrar = self.create_user('staff_registrar', 'Unit Staff', groups, first_name='Rana')
         staff_finance = self.create_user('staff_finance', 'Unit Staff', groups, first_name='Maya')
+        staff_triage = self.create_user('staff_triage', 'Unit Staff', groups, first_name='Tola')
 
+        triage = self.create_unit(
+            'Triage Desk',
+            'Reviews incoming requests and routes tickets to the correct support unit.'
+        )
         it_services = self.create_unit(
             'IT Services',
             'Handles campus technology, student portal access, wireless networks, and classroom systems.'
@@ -42,6 +47,7 @@ class Command(BaseCommand):
             'Supports tuition payments, receipts, scholarships, and billing questions.'
         )
 
+        routing = self.create_topic(triage, 'Ticket Routing', 'Initial review and assignment to the right department.')
         wifi = self.create_topic(network_team, 'Campus Wi-Fi', 'Wireless access and connectivity support.')
         portal = self.create_topic(it_services, 'Student Portal', 'Login, password, and portal access issues.')
         registration = self.create_topic(registrar, 'Course Registration', 'Registration, prerequisite, and add/drop requests.')
@@ -148,8 +154,24 @@ class Command(BaseCommand):
             transitions=[('new', 'withdrawn', student_musa)],
         )
 
+        self.create_ticket(
+            title='Not sure which office handles student ID replacement',
+            description='My student ID card is damaged and I am not sure if this should go to IT, Registrar, or Student Affairs.',
+            unit=triage,
+            topic=routing,
+            created_by=student_ada,
+            assigned_to=staff_triage,
+            priority='medium',
+            status='new',
+            age_hours=1,
+            comments=[
+                (student_ada, 'Please route this to the correct office.'),
+                (staff_triage, 'Triage Desk is reviewing the request before assigning it.'),
+            ],
+        )
+
         self.stdout.write(self.style.SUCCESS('Demo data ready.'))
-        self.stdout.write('Log in with admin_demo, staff_it, or student_ada using password demo12345.')
+        self.stdout.write('Log in with admin_demo, staff_triage, staff_it, or student_ada using password demo12345.')
 
     def create_user(self, username, group_name, groups, first_name='', is_staff=False, is_superuser=False):
         user, _ = User.objects.get_or_create(
@@ -210,6 +232,7 @@ class Command(BaseCommand):
                 'assigned_to': assigned_to,
                 'priority': priority,
                 'status': status,
+                'contact_email': created_by.email,
             }
         )
 

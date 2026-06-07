@@ -11,9 +11,15 @@ A realistic, demonstrable server-side web application for managing university su
 
 - Hierarchical support units and service topics
 
+- Triage Desk department for reviewing unclear requests and routing tickets to the correct unit
+
 - Ticket queue with search and filters by status, priority, unit, and assignee
 
 - Ticket detail page with comments, status history, requester, assignee, and SLA target
+
+- File attachments on ticket creation and ticket detail pages
+
+- Email notifications when tickets are created and when ticket status changes
 
 - Realistic ticket workflow: New, In Progress, Done, Canceled, Withdrawn
 
@@ -99,6 +105,34 @@ Do not commit the secret key to the repository.
 
 ---
 
+## File Uploads
+
+Uploaded files are stored locally in the `media/attachments/` folder during development.
+Django serves these files through `/media/` while `DEBUG=True`.
+
+---
+
+## Email Notifications
+
+By default, email notifications are printed in the terminal where `python manage.py runserver` is running.
+This makes the feature easy to demonstrate without Gmail, SMTP, or paid email services.
+
+To send real emails, configure Django's SMTP settings:
+
+```bash
+export EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend"
+export EMAIL_HOST="smtp.example.com"
+export EMAIL_PORT="587"
+export EMAIL_HOST_USER="your-email@example.com"
+export EMAIL_HOST_PASSWORD="your-email-password"
+export DEFAULT_FROM_EMAIL="University Support <your-email@example.com>"
+python manage.py runserver
+```
+
+Ticket creation emails and status change emails are sent to the ticket's notification email.
+
+---
+
 ## Demo Accounts
 
 After running `python manage.py seed_demo`, you can log in with:
@@ -106,6 +140,7 @@ After running `python manage.py seed_demo`, you can log in with:
 | Role | Username | Password |
 | --- | --- | --- |
 | Admin | `admin_demo` | `demo12345` |
+| Triage Staff | `staff_triage` | `demo12345` |
 | Unit Staff | `staff_it` | `demo12345` |
 | Student | `student_ada` | `demo12345` |
 
@@ -130,10 +165,15 @@ http://127.0.0.1:8000/api/ui/tickets/
 ## Demo Flow
 
 1. Log in as `student_ada` and create a new support ticket.
-2. Log out, then log in as `staff_it`.
-3. Open the ticket queue and filter by unassigned or high-priority tickets.
-4. Open a ticket detail page, assign it to staff, add a comment, and move it to In Progress.
-5. Log in as `admin_demo` to show the full dashboard, units, topics, and all tickets.
+2. Add a notification email and upload a supporting file.
+3. Check the terminal to show the ticket-created email.
+4. Log out, then log in as `staff_triage`.
+5. Open the sample Triage Desk ticket and route it to the correct support unit/topic.
+6. Log out, then log in as `staff_it`.
+7. Open the ticket queue and filter by unassigned or high-priority tickets.
+8. Open a ticket detail page, assign it to staff, add a comment, and move it to In Progress.
+9. Check the terminal again to show the status-change email.
+10. Log in as `admin_demo` to show the full dashboard, units, topics, and all tickets.
 
 ---
 
@@ -141,7 +181,7 @@ http://127.0.0.1:8000/api/ui/tickets/
 
 - This project is designed for education and classroom demonstration.
 - The default SQLite database is fine for local demos.
-- reCAPTCHA is optional and only appears when keys are configured.
+- The login page uses a demo reCAPTCHA checkbox unless real Google keys are configured.
 - For a production system, move all secrets to environment variables, enforce stronger permissions, and review deployment security settings.
 
 ---

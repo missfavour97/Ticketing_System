@@ -9,7 +9,7 @@
 {% endif %}
 
 <section class="surface">
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
 
         <div class="row g-3">
@@ -48,9 +48,20 @@
                 </select>
             </div>
 
+            <div class="col-md-8">
+                <label class="form-label" for="contact_email">Notification email</label>
+                <input id="contact_email" type="email" name="contact_email" value="{{ default_contact_email }}" class="form-control" placeholder="student@example.com">
+            </div>
+
             <div class="col-12">
                 <label class="form-label" for="description">Description</label>
                 <textarea id="description" name="description" class="form-control" rows="6" required></textarea>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label" for="attachments">Attachments</label>
+                <input id="attachments" type="file" name="attachments" class="form-control" multiple>
+                <div class="form-text">Upload screenshots, receipts, PDFs, or other supporting files.</div>
             </div>
 
             <div class="col-12">

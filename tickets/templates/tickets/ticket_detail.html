@@ -24,6 +24,36 @@
         </section>
 
         <section class="surface mb-4">
+            <h3 class="h5 mb-3">Attachments</h3>
+
+            {% if attachments %}
+                <div class="vstack gap-2 mb-4">
+                    {% for attachment in attachments %}
+                        <div class="border rounded p-3 d-flex justify-content-between gap-3">
+                            <div>
+                                <a href="{{ attachment.file.url }}" class="fw-semibold" target="_blank" rel="noopener">
+                                    {{ attachment.filename }}
+                                </a>
+                                <div class="muted-small">
+                                    Uploaded by {{ attachment.uploaded_by.username|default:"Unknown" }} on {{ attachment.uploaded_at|date:"M d, Y H:i" }}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted">No attachments uploaded.</p>
+            {% endif %}
+
+            <form method="post" action="/api/ui/tickets/{{ ticket.id }}/attachments/" enctype="multipart/form-data">
+                {% csrf_token %}
+                <label class="form-label" for="attachments">Add files</label>
+                <input id="attachments" type="file" name="attachments" class="form-control mb-3" multiple required>
+                <button type="submit" class="btn btn-outline-primary">Upload files</button>
+            </form>
+        </section>
+
+        <section class="surface mb-4">
             <h3 class="h5 mb-3">Comments</h3>
 
             {% if comments %}
@@ -57,6 +87,9 @@
             <dl class="row mb-0">
                 <dt class="col-5">Requester</dt>
                 <dd class="col-7">{{ ticket.created_by.username }}</dd>
+
+                <dt class="col-5">Email</dt>
+                <dd class="col-7">{{ ticket.notification_email|default:"Not set" }}</dd>
 
                 <dt class="col-5">Assignee</dt>
                 <dd class="col-7">{{ ticket.assigned_to.username|default:"Unassigned" }}</dd>
@@ -122,6 +155,41 @@
                 <p class="mb-0 text-muted">This ticket is closed.</p>
             {% endif %}
         </section>
+
+        {% if can_manage %}
+            <section class="surface mb-4">
+                <h3 class="h5 mb-3">Route Ticket</h3>
+                <p class="text-muted small">
+                    Use this when the Triage Desk reviews a request and sends it to the correct support unit.
+                </p>
+
+                <form method="post" action="/api/ui/tickets/{{ ticket.id }}/route/">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label" for="route_unit">Support unit</label>
+                        <select id="route_unit" name="unit" class="form-select" required>
+                            {% for unit in units %}
+                                <option value="{{ unit.id }}" {% if ticket.unit_id == unit.id %}selected{% endif %}>{{ unit.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="route_topic">Topic</label>
+                        <select id="route_topic" name="topic" class="form-select" required>
+                            {% for topic in topics %}
+                                <option value="{{ topic.id }}" {% if ticket.topic_id == topic.id %}selected{% endif %}>
+                                    {{ topic.unit.name }} - {{ topic.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-outline-primary">Route ticket</button>
+                </form>
+            </section>
+        {% endif %}
 
         <section class="surface">
             <h3 class="h5 mb-3">Status History</h3>

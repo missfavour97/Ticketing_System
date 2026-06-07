@@ -5,7 +5,8 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.db.models import Count, Q
-from .models import Ticket, Unit, Topic, Comment, StatusHistory
+from .models import Attachment, Ticket, Unit, Topic, Comment, StatusHistory
+from .notifications import send_ticket_created_email, send_ticket_status_email
 from .recaptcha import is_recaptcha_enabled, recaptcha_mode, verify_recaptcha
 import json
 
@@ -113,6 +114,26 @@ def status_cards_for(tickets):
     ]
 
 
+def save_ticket_attachments(ticket, files, user):
+    for uploaded_file in files.getlist('attachments'):
+        Attachment.objects.create(
+            ticket=ticket,
+            uploaded_by=user,
+            file=uploaded_file
+        )
+
+
+def add_routing_comment(ticket, user, old_unit, old_topic):
+    Comment.objects.create(
+        ticket=ticket,
+        user=user,
+        message=(
+            f"Ticket routed from {old_unit.name} / {old_topic.name} "
+            f"to {ticket.unit.name} / {ticket.topic.name}."
+        )
+    )
+
+
 def login_page(request):
     if request.method == "POST":
         username = request.POST.get("username")
@@ -169,9 +190,12 @@ def create_ticket(request):
                 assigned_to=assigned_to,
                 title=data['title'],
                 description=data['description'],
+                contact_email=data.get('contact_email', user.email),
                 status=data.get('status', 'new'),
                 priority=data.get('priority', 'medium')
             )
+
+            send_ticket_created_email(ticket)
 
             return JsonResponse({
                 'message': 'Ticket created successfully',
@@ -195,6 +219,7 @@ def list_tickets(request):
         'topic__name',
         'created_by__username',
         'assigned_to__username',
+        'contact_email',
         'created_at',
         'updated_at'
     )
@@ -214,6 +239,7 @@ def ticket_detail(request, ticket_id):
         'topic': ticket.topic.name,
         'created_by': ticket.created_by.username,
         'assigned_to': ticket.assigned_to.username if ticket.assigned_to else None,
+        'contact_email': ticket.contact_email,
         'ticket_number': ticket.ticket_number,
         'sla_due_at': ticket.sla_due_at,
         'is_sla_breached': ticket.is_sla_breached,
@@ -246,6 +272,7 @@ def update_ticket_status(request, ticket_id):
                 new_status=new_status,
                 changed_by=changed_by
             )
+            send_ticket_status_email(ticket, old_status, new_status, changed_by)
 
             return JsonResponse({'message': 'Ticket status updated successfully'})
 
@@ -267,6 +294,7 @@ def update_ticket_status_page(request, ticket_id):
         priority = request.POST.get('priority')
         assigned_to_id = request.POST.get('assigned_to')
         can_manage = can_manage_tickets(request.user)
+        status_changed = False
 
         valid_statuses = dict(Ticket.STATUS_CHOICES)
         valid_priorities = dict(Ticket.PRIORITY_CHOICES)
@@ -284,6 +312,7 @@ def update_ticket_status_page(request, ticket_id):
 
         if new_status and new_status != old_status:
             ticket.status = new_status
+            status_changed = True
 
             StatusHistory.objects.create(
                 ticket=ticket,
@@ -302,6 +331,9 @@ def update_ticket_status_page(request, ticket_id):
                 ticket.assigned_to = User.objects.filter(id=assigned_to_id).first()
 
         ticket.save()
+
+        if status_changed:
+            send_ticket_status_email(ticket, old_status, new_status, request.user)
 
     return redirect('ticket_detail_page', ticket_id=ticket.id)
 
@@ -456,6 +488,7 @@ def create_ticket_page(request):
         priority = request.POST.get('priority')
         unit_id = request.POST.get('unit')
         topic_id = request.POST.get('topic')
+        contact_email = request.POST.get('contact_email') or request.user.email
 
         if title and description and priority and unit_id and topic_id:
             topic = Topic.objects.filter(id=topic_id, unit_id=unit_id).first()
@@ -470,8 +503,10 @@ def create_ticket_page(request):
                     priority=priority,
                     unit_id=unit_id,
                     topic=topic,
-                    created_by=request.user
+                    created_by=request.user,
+                    contact_email=contact_email
                 )
+                save_ticket_attachments(ticket, request.FILES, request.user)
 
                 StatusHistory.objects.create(
                     ticket=ticket,
@@ -479,6 +514,7 @@ def create_ticket_page(request):
                     new_status='new',
                     changed_by=request.user
                 )
+                send_ticket_created_email(ticket)
 
                 return redirect('ticket_detail_page', ticket_id=ticket.id)
         else:
@@ -488,6 +524,7 @@ def create_ticket_page(request):
         'units': units,
         'topics': topics,
         'error': error,
+        'default_contact_email': request.user.email,
         'role': get_user_role(request.user),
     })
 
@@ -518,14 +555,21 @@ def ticket_detail_page(request, ticket_id):
 
     ticket = get_object_or_404(
         visible_tickets_for(request.user)
-        .prefetch_related('comments__user', 'status_history__changed_by'),
+        .prefetch_related(
+            'attachments__uploaded_by',
+            'comments__user',
+            'status_history__changed_by',
+        ),
         id=ticket_id
     )
 
     return render(request, 'tickets/ticket_detail.html', {
         'ticket': ticket,
+        'attachments': ticket.attachments.all().order_by('-uploaded_at'),
         'comments': ticket.comments.all().order_by('created_at'),
         'history': ticket.status_history.all().order_by('-changed_at'),
+        'units': Unit.objects.order_by('name'),
+        'topics': Topic.objects.select_related('unit').order_by('unit__name', 'name'),
         'staff_users': staff_users(),
         'status_choices': Ticket.STATUS_CHOICES,
         'priority_choices': Ticket.PRIORITY_CHOICES,
@@ -549,6 +593,45 @@ def add_comment_page(request, ticket_id):
                 user=request.user,
                 message=content
             )
+
+    return redirect('ticket_detail_page', ticket_id=ticket.id)
+
+
+def add_attachment_page(request, ticket_id):
+    if not request.user.is_authenticated:
+        return redirect('/api/login/')
+
+    ticket = get_object_or_404(visible_tickets_for(request.user), id=ticket_id)
+
+    if request.method == 'POST':
+        save_ticket_attachments(ticket, request.FILES, request.user)
+
+    return redirect('ticket_detail_page', ticket_id=ticket.id)
+
+
+def route_ticket_page(request, ticket_id):
+    if not request.user.is_authenticated:
+        return redirect('/api/login/')
+
+    if not can_manage_tickets(request.user):
+        return redirect('ticket_detail_page', ticket_id=ticket_id)
+
+    ticket = get_object_or_404(visible_tickets_for(request.user), id=ticket_id)
+
+    if request.method == 'POST':
+        unit_id = request.POST.get('unit')
+        topic_id = request.POST.get('topic')
+        topic = Topic.objects.filter(id=topic_id, unit_id=unit_id).select_related('unit').first()
+
+        if topic:
+            old_unit = ticket.unit
+            old_topic = ticket.topic
+            ticket.unit = topic.unit
+            ticket.topic = topic
+            ticket.save()
+
+            if old_unit.id != ticket.unit_id or old_topic.id != ticket.topic_id:
+                add_routing_comment(ticket, request.user, old_unit, old_topic)
 
     return redirect('ticket_detail_page', ticket_id=ticket.id)
 
