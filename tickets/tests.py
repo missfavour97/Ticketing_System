@@ -1,7 +1,7 @@
 import shutil
 import tempfile
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, User
 from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
@@ -232,3 +232,76 @@ class TicketRoutingTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(self.ticket.unit, self.triage)
         self.assertEqual(self.ticket.topic, self.routing)
+
+
+class KanbanBoardTests(TestCase):
+    def setUp(self):
+        self.staff = User.objects.create_user(
+            username='staff',
+            password='demo12345',
+            is_staff=True,
+        )
+        self.student = User.objects.create_user(username='student', password='demo12345')
+        self.unit = Unit.objects.create(name='IT Services')
+        self.topic = Topic.objects.create(unit=self.unit, name='Student Portal')
+
+    def create_ticket(self, title, status):
+        return Ticket.objects.create(
+            unit=self.unit,
+            topic=self.topic,
+            created_by=self.student,
+            title=title,
+            description='Demo ticket',
+            status=status,
+        )
+
+    def test_kanban_requires_login(self):
+        response = self.client.get('/api/ui/tickets/kanban/')
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], '/api/login/')
+
+    def test_kanban_groups_tickets_by_status(self):
+        self.create_ticket('Password reset is broken', 'new')
+        self.create_ticket('Wi-Fi lab issue', 'in_progress')
+        self.create_ticket('Course registration fixed', 'done')
+        self.client.login(username='staff', password='demo12345')
+
+        response = self.client.get('/api/ui/tickets/kanban/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Kanban Board')
+        self.assertContains(response, 'New')
+        self.assertContains(response, 'In Progress')
+        self.assertContains(response, 'Done')
+        self.assertContains(response, 'Password reset is broken')
+        self.assertContains(response, 'Wi-Fi lab issue')
+        self.assertContains(response, 'Course registration fixed')
+
+
+class TicketVisibilityTests(TestCase):
+    def setUp(self):
+        unit_staff_group = Group.objects.create(name='Unit Staff')
+        self.staff_it = User.objects.create_user(username='staff_it', password='demo12345')
+        self.staff_triage = User.objects.create_user(username='staff_triage', password='demo12345')
+        unit_staff_group.user_set.add(self.staff_it, self.staff_triage)
+
+        self.student = User.objects.create_user(username='student', password='demo12345')
+        self.unit = Unit.objects.create(name='IT Services')
+        self.topic = Topic.objects.create(unit=self.unit, name='Student Portal')
+        self.ticket = Ticket.objects.create(
+            unit=self.unit,
+            topic=self.topic,
+            created_by=self.student,
+            assigned_to=self.staff_it,
+            title='Ticket assigned to IT',
+            description='Only the assigned staff should see this.',
+        )
+
+    def test_inaccessible_ticket_redirects_to_list_with_message(self):
+        self.client.login(username='staff_triage', password='demo12345')
+
+        response = self.client.get(f'/api/ui/tickets/{self.ticket.id}/', follow=True)
+
+        self.assertRedirects(response, '/api/ui/tickets/')
+        self.assertContains(response, 'That ticket is not available for your account.')

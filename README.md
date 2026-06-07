@@ -15,6 +15,8 @@ A realistic, demonstrable server-side web application for managing university su
 
 - Ticket queue with search and filters by status, priority, unit, and assignee
 
+- Kanban board that groups tickets by New, In Progress, Done, Canceled, and Withdrawn
+
 - Ticket detail page with comments, status history, requester, assignee, and SLA target
 
 - File attachments on ticket creation and ticket detail pages
@@ -160,6 +162,9 @@ http://127.0.0.1:8000/api/ui/units/
 Tickets:
 http://127.0.0.1:8000/api/ui/tickets/
 
+Kanban:
+http://127.0.0.1:8000/api/ui/tickets/kanban/
+
 ---
 
 ## Demo Flow
@@ -171,9 +176,10 @@ http://127.0.0.1:8000/api/ui/tickets/
 5. Open the sample Triage Desk ticket and route it to the correct support unit/topic.
 6. Log out, then log in as `staff_it`.
 7. Open the ticket queue and filter by unassigned or high-priority tickets.
-8. Open a ticket detail page, assign it to staff, add a comment, and move it to In Progress.
-9. Check the terminal again to show the status-change email.
-10. Log in as `admin_demo` to show the full dashboard, units, topics, and all tickets.
+8. Open the Kanban board to show tickets grouped by workflow status.
+9. Open a ticket detail page, assign it to staff, add a comment, and move it to In Progress.
+10. Check the terminal again to show the status-change email.
+11. Log in as `admin_demo` to show the full dashboard, units, topics, and all tickets.
 
 ---
 

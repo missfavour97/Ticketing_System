@@ -105,6 +105,57 @@
             font-size: 0.9rem;
         }
 
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(220px, 1fr));
+            gap: 16px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+
+        .kanban-column {
+            min-width: 220px;
+            background: #e9eef4;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .kanban-column-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .kanban-column-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .kanban-card {
+            display: block;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            color: inherit;
+            margin-bottom: 10px;
+            padding: 12px;
+            text-decoration: none;
+        }
+
+        .kanban-card:hover {
+            border-color: #8aa4c2;
+            color: inherit;
+        }
+
+        .kanban-card-title {
+            font-weight: 700;
+            line-height: 1.25;
+        }
+
         @media (max-width: 900px) {
             .app-shell {
                 display: block;
@@ -133,6 +184,7 @@
         <nav class="nav flex-column">
             <a href="/api/ui/dashboard/" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a>
             <a href="/api/ui/tickets/" class="nav-link {% if request.resolver_match.url_name == 'ticket_list_page' %}active{% endif %}">Tickets</a>
+            <a href="/api/ui/tickets/kanban/" class="nav-link {% if request.resolver_match.url_name == 'kanban_board_page' %}active{% endif %}">Kanban Board</a>
             <a href="/api/ui/tickets/create/" class="nav-link {% if request.resolver_match.url_name == 'create_ticket_page' %}active{% endif %}">New Ticket</a>
 
             {% if role != "Unit Staff" %}
@@ -160,6 +212,14 @@
                 <button type="submit" class="btn btn-outline-danger btn-sm">Logout</button>
             </form>
         </div>
+
+        {% if messages %}
+            <div class="mb-3">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }} mb-2">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
 
         {% block content %}{% endblock %}
     </main>

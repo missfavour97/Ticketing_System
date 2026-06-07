@@ -1,0 +1,50 @@
+{% extends "tickets/base.html" %}
+
+{% block title %}Kanban Board | University Support{% endblock %}
+{% block page_title %}Kanban Board{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="muted-small">Tickets grouped by workflow status</div>
+    <div>
+        <a href="/api/ui/tickets/" class="btn btn-outline-secondary btn-sm">List view</a>
+        <a href="/api/ui/tickets/create/" class="btn btn-primary btn-sm">New ticket</a>
+    </div>
+</div>
+
+<div class="kanban-board">
+    {% for column in columns %}
+        <section class="kanban-column">
+            <div class="kanban-column-header">
+                <h2 class="kanban-column-title">{{ column.label }}</h2>
+                <span class="badge text-bg-light">{{ column.tickets|length }}</span>
+            </div>
+
+            {% for ticket in column.tickets %}
+                <a class="kanban-card" href="/api/ui/tickets/{{ ticket.id }}/">
+                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                        <span class="muted-small">{{ ticket.ticket_number }}</span>
+                        <span class="badge {{ ticket.priority_badge_class }}">{{ ticket.get_priority_display }}</span>
+                    </div>
+
+                    <div class="kanban-card-title mb-2">{{ ticket.title }}</div>
+                    <div class="muted-small mb-2">{{ ticket.unit.name }} / {{ ticket.topic.name }}</div>
+
+                    <div class="d-flex flex-wrap gap-1 mb-2">
+                        <span class="badge text-bg-light">{{ ticket.assigned_to.username|default:"Unassigned" }}</span>
+                        {% if ticket.comment_count %}
+                            <span class="badge text-bg-light">{{ ticket.comment_count }} comments</span>
+                        {% endif %}
+                    </div>
+
+                    {% if ticket.is_sla_breached %}
+                        <span class="badge text-bg-danger">SLA breached</span>
+                    {% endif %}
+                </a>
+            {% empty %}
+                <div class="text-muted small">No tickets</div>
+            {% endfor %}
+        </section>
+    {% endfor %}
+</div>
+{% endblock %}

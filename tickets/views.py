@@ -2,6 +2,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404, render, redirect
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.db.models import Count, Q
@@ -28,6 +29,11 @@ def get_user_role(user):
 def can_manage_tickets(user):
     role = get_user_role(user)
     return user.is_staff or role in ['Admin', 'Unit Staff']
+
+
+def unavailable_ticket_response(request):
+    messages.warning(request, 'That ticket is not available for your account.')
+    return redirect('ticket_list_page')
 
 
 def staff_users():
@@ -109,6 +115,17 @@ def status_cards_for(tickets):
                 'canceled': 'border-secondary',
                 'withdrawn': 'border-dark',
             }.get(value, 'border-secondary')
+        }
+        for value, label in Ticket.STATUS_CHOICES
+    ]
+
+
+def kanban_columns_for(tickets):
+    return [
+        {
+            'value': value,
+            'label': label,
+            'tickets': tickets.filter(status=value).order_by('-updated_at'),
         }
         for value, label in Ticket.STATUS_CHOICES
     ]
@@ -286,7 +303,9 @@ def update_ticket_status_page(request, ticket_id):
     if not request.user.is_authenticated:
         return redirect('/api/login/')
 
-    ticket = get_object_or_404(visible_tickets_for(request.user), id=ticket_id)
+    ticket = visible_tickets_for(request.user).filter(id=ticket_id).first()
+    if ticket is None:
+        return unavailable_ticket_response(request)
 
     if request.method == 'POST':
         old_status = ticket.status
@@ -549,19 +568,34 @@ def ticket_list_page(request):
     })
 
 
+def kanban_board_page(request):
+    if not request.user.is_authenticated:
+        return redirect('/api/login/')
+
+    tickets = visible_tickets_for(request.user).annotate(comment_count=Count('comments'))
+
+    return render(request, 'tickets/kanban_board.html', {
+        'columns': kanban_columns_for(tickets),
+        'role': get_user_role(request.user),
+    })
+
+
 def ticket_detail_page(request, ticket_id):
     if not request.user.is_authenticated:
         return redirect('/api/login/')
 
-    ticket = get_object_or_404(
+    ticket = (
         visible_tickets_for(request.user)
         .prefetch_related(
             'attachments__uploaded_by',
             'comments__user',
             'status_history__changed_by',
-        ),
-        id=ticket_id
+        )
+        .filter(id=ticket_id)
+        .first()
     )
+    if ticket is None:
+        return unavailable_ticket_response(request)
 
     return render(request, 'tickets/ticket_detail.html', {
         'ticket': ticket,
@@ -582,7 +616,9 @@ def add_comment_page(request, ticket_id):
     if not request.user.is_authenticated:
         return redirect('/api/login/')
 
-    ticket = get_object_or_404(visible_tickets_for(request.user), id=ticket_id)
+    ticket = visible_tickets_for(request.user).filter(id=ticket_id).first()
+    if ticket is None:
+        return unavailable_ticket_response(request)
 
     if request.method == 'POST':
         content = request.POST.get('content')
@@ -601,7 +637,9 @@ def add_attachment_page(request, ticket_id):
     if not request.user.is_authenticated:
         return redirect('/api/login/')
 
-    ticket = get_object_or_404(visible_tickets_for(request.user), id=ticket_id)
+    ticket = visible_tickets_for(request.user).filter(id=ticket_id).first()
+    if ticket is None:
+        return unavailable_ticket_response(request)
 
     if request.method == 'POST':
         save_ticket_attachments(ticket, request.FILES, request.user)
@@ -616,7 +654,9 @@ def route_ticket_page(request, ticket_id):
     if not can_manage_tickets(request.user):
         return redirect('ticket_detail_page', ticket_id=ticket_id)
 
-    ticket = get_object_or_404(visible_tickets_for(request.user), id=ticket_id)
+    ticket = visible_tickets_for(request.user).filter(id=ticket_id).first()
+    if ticket is None:
+        return unavailable_ticket_response(request)
 
     if request.method == 'POST':
         unit_id = request.POST.get('unit')
