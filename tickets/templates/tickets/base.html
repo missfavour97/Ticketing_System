@@ -105,7 +105,7 @@
             font-size: 0.9rem;
         }
 
-        .kanban-board {
+        .tickets-board {
             display: grid;
             grid-template-columns: repeat(5, minmax(220px, 1fr));
             gap: 16px;
@@ -113,7 +113,7 @@
             padding-bottom: 8px;
         }
 
-        .kanban-column {
+        .board-column {
             min-width: 220px;
             background: #e9eef4;
             border: 1px solid var(--line);
@@ -121,7 +121,7 @@
             padding: 12px;
         }
 
-        .kanban-column-header {
+        .board-column-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -129,13 +129,13 @@
             margin-bottom: 12px;
         }
 
-        .kanban-column-title {
+        .board-column-title {
             font-size: 0.95rem;
             font-weight: 700;
             margin: 0;
         }
 
-        .kanban-card {
+        .board-card {
             display: block;
             background: #fff;
             border: 1px solid var(--line);
@@ -146,12 +146,12 @@
             text-decoration: none;
         }
 
-        .kanban-card:hover {
+        .board-card:hover {
             border-color: #8aa4c2;
             color: inherit;
         }
 
-        .kanban-card-title {
+        .board-card-title {
             font-weight: 700;
             line-height: 1.25;
         }
@@ -184,7 +184,9 @@
         <nav class="nav flex-column">
             <a href="/api/ui/dashboard/" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a>
             <a href="/api/ui/tickets/" class="nav-link {% if request.resolver_match.url_name == 'ticket_list_page' %}active{% endif %}">Tickets</a>
-            <a href="/api/ui/tickets/kanban/" class="nav-link {% if request.resolver_match.url_name == 'kanban_board_page' %}active{% endif %}">Kanban Board</a>
+            {% if role != "Student" %}
+                <a href="/api/ui/tickets/board/" class="nav-link {% if request.resolver_match.url_name == 'tickets_board_page' %}active{% endif %}">Tickets Board</a>
+            {% endif %}
             <a href="/api/ui/tickets/create/" class="nav-link {% if request.resolver_match.url_name == 'create_ticket_page' %}active{% endif %}">New Ticket</a>
 
             {% if role != "Unit Staff" %}

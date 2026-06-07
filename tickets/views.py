@@ -120,7 +120,7 @@ def status_cards_for(tickets):
     ]
 
 
-def kanban_columns_for(tickets):
+def ticket_board_columns_for(tickets):
     return [
         {
             'value': value,
@@ -568,14 +568,18 @@ def ticket_list_page(request):
     })
 
 
-def kanban_board_page(request):
+def tickets_board_page(request):
     if not request.user.is_authenticated:
         return redirect('/api/login/')
 
+    if get_user_role(request.user) == 'Student':
+        messages.warning(request, 'Tickets Board is available to staff and admins.')
+        return redirect('ticket_list_page')
+
     tickets = visible_tickets_for(request.user).annotate(comment_count=Count('comments'))
 
-    return render(request, 'tickets/kanban_board.html', {
-        'columns': kanban_columns_for(tickets),
+    return render(request, 'tickets/tickets_board.html', {
+        'columns': ticket_board_columns_for(tickets),
         'role': get_user_role(request.user),
     })
 

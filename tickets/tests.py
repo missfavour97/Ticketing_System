@@ -234,14 +234,16 @@ class TicketRoutingTests(TestCase):
         self.assertEqual(self.ticket.topic, self.routing)
 
 
-class KanbanBoardTests(TestCase):
+class TicketsBoardTests(TestCase):
     def setUp(self):
+        student_group = Group.objects.create(name='Student')
         self.staff = User.objects.create_user(
             username='staff',
             password='demo12345',
             is_staff=True,
         )
         self.student = User.objects.create_user(username='student', password='demo12345')
+        student_group.user_set.add(self.student)
         self.unit = Unit.objects.create(name='IT Services')
         self.topic = Topic.objects.create(unit=self.unit, name='Student Portal')
 
@@ -255,22 +257,30 @@ class KanbanBoardTests(TestCase):
             status=status,
         )
 
-    def test_kanban_requires_login(self):
-        response = self.client.get('/api/ui/tickets/kanban/')
+    def test_board_requires_login(self):
+        response = self.client.get('/api/ui/tickets/board/')
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response['Location'], '/api/login/')
 
-    def test_kanban_groups_tickets_by_status(self):
+    def test_student_cannot_access_board(self):
+        self.client.login(username='student', password='demo12345')
+
+        response = self.client.get('/api/ui/tickets/board/', follow=True)
+
+        self.assertRedirects(response, '/api/ui/tickets/')
+        self.assertContains(response, 'Tickets Board is available to staff and admins.')
+
+    def test_board_groups_tickets_by_status(self):
         self.create_ticket('Password reset is broken', 'new')
         self.create_ticket('Wi-Fi lab issue', 'in_progress')
         self.create_ticket('Course registration fixed', 'done')
         self.client.login(username='staff', password='demo12345')
 
-        response = self.client.get('/api/ui/tickets/kanban/')
+        response = self.client.get('/api/ui/tickets/board/')
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Kanban Board')
+        self.assertContains(response, 'Tickets Board')
         self.assertContains(response, 'New')
         self.assertContains(response, 'In Progress')
         self.assertContains(response, 'Done')
