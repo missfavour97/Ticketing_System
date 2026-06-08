@@ -188,6 +188,14 @@
                 <a href="/api/ui/tickets/board/" class="nav-link {% if request.resolver_match.url_name == 'tickets_board_page' %}active{% endif %}">Tickets Board</a>
             {% endif %}
             <a href="/api/ui/tickets/create/" class="nav-link {% if request.resolver_match.url_name == 'create_ticket_page' %}active{% endif %}">New Ticket</a>
+            {% if request.user.is_authenticated %}
+                <a href="/api/ui/notifications/" class="nav-link d-flex align-items-center justify-content-between {% if request.resolver_match.url_name == 'notification_list_page' %}active{% endif %}">
+                    <span>Notifications</span>
+                    {% if unread_notifications_count %}
+                        <span class="badge text-bg-warning">{{ unread_notifications_count }}</span>
+                    {% endif %}
+                </a>
+            {% endif %}
 
             {% if role != "Unit Staff" %}
                 <a href="/api/ui/units/" class="nav-link {% if request.resolver_match.url_name == 'unit_list_page' %}active{% endif %}">Units</a>

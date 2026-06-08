@@ -7,7 +7,14 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.db.models import Count, Q
 from .models import Attachment, Ticket, Unit, Topic, Comment, StatusHistory
-from .notifications import send_ticket_created_email, send_ticket_status_email
+from .notifications import (
+    notify_ticket_assigned,
+    notify_ticket_created,
+    notify_ticket_routed,
+    notify_ticket_status_changed,
+    send_ticket_created_email,
+    send_ticket_status_email,
+)
 from .recaptcha import is_recaptcha_enabled, recaptcha_mode, verify_recaptcha
 import json
 
@@ -213,6 +220,8 @@ def create_ticket(request):
             )
 
             send_ticket_created_email(ticket)
+            notify_ticket_created(ticket)
+            notify_ticket_assigned(ticket, user)
 
             return JsonResponse({
                 'message': 'Ticket created successfully',
@@ -290,6 +299,7 @@ def update_ticket_status(request, ticket_id):
                 changed_by=changed_by
             )
             send_ticket_status_email(ticket, old_status, new_status, changed_by)
+            notify_ticket_status_changed(ticket, old_status, new_status, changed_by)
 
             return JsonResponse({'message': 'Ticket status updated successfully'})
 
@@ -309,6 +319,7 @@ def update_ticket_status_page(request, ticket_id):
 
     if request.method == 'POST':
         old_status = ticket.status
+        old_assigned_to_id = ticket.assigned_to_id
         new_status = request.POST.get('status')
         priority = request.POST.get('priority')
         assigned_to_id = request.POST.get('assigned_to')
@@ -353,6 +364,10 @@ def update_ticket_status_page(request, ticket_id):
 
         if status_changed:
             send_ticket_status_email(ticket, old_status, new_status, request.user)
+            notify_ticket_status_changed(ticket, old_status, new_status, request.user)
+
+        if can_manage and ticket.assigned_to_id and ticket.assigned_to_id != old_assigned_to_id:
+            notify_ticket_assigned(ticket, request.user)
 
     return redirect('ticket_detail_page', ticket_id=ticket.id)
 
@@ -534,6 +549,7 @@ def create_ticket_page(request):
                     changed_by=request.user
                 )
                 send_ticket_created_email(ticket)
+                notify_ticket_created(ticket)
 
                 return redirect('ticket_detail_page', ticket_id=ticket.id)
         else:
@@ -677,8 +693,47 @@ def route_ticket_page(request, ticket_id):
 
             if old_unit.id != ticket.unit_id or old_topic.id != ticket.topic_id:
                 add_routing_comment(ticket, request.user, old_unit, old_topic)
+                notify_ticket_routed(ticket, old_unit, old_topic, request.user)
 
     return redirect('ticket_detail_page', ticket_id=ticket.id)
+
+
+def notification_list_page(request):
+    if not request.user.is_authenticated:
+        return redirect('/api/login/')
+
+    notifications = request.user.notifications.select_related('ticket')
+    return render(request, 'tickets/notifications.html', {
+        'notifications': notifications,
+        'unread_count': notifications.filter(is_read=False).count(),
+        'role': get_user_role(request.user),
+    })
+
+
+def mark_notification_read_page(request, notification_id):
+    if not request.user.is_authenticated:
+        return redirect('/api/login/')
+
+    notification = get_object_or_404(request.user.notifications, id=notification_id)
+
+    if request.method == 'POST':
+        notification.is_read = True
+        notification.save(update_fields=['is_read'])
+
+        if notification.ticket_id:
+            return redirect('ticket_detail_page', ticket_id=notification.ticket_id)
+
+    return redirect('notification_list_page')
+
+
+def mark_all_notifications_read_page(request):
+    if not request.user.is_authenticated:
+        return redirect('/api/login/')
+
+    if request.method == 'POST':
+        request.user.notifications.filter(is_read=False).update(is_read=True)
+
+    return redirect('notification_list_page')
 
 
 def dashboard_page(request):
@@ -693,6 +748,7 @@ def dashboard_page(request):
 
     return render(request, 'tickets/dashboard.html', {
         'role': role,
+        'hide_user_identity': request.user.username == 'admin_demo',
         'total_units': Unit.objects.count(),
         'total_topics': Topic.objects.count(),
         'total_tickets': tickets.count(),

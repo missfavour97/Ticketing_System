@@ -7,7 +7,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from .models import Attachment, StatusHistory, Ticket, Topic, Unit
+from .models import Attachment, Notification, StatusHistory, Ticket, Topic, Unit
 from .recaptcha import verify_recaptcha
 
 
@@ -144,6 +144,13 @@ class TicketAttachmentAndEmailTests(TestCase):
         self.assertEqual(ticket.attachments.first().filename, 'screenshot.txt')
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn(ticket.ticket_number, mail.outbox[0].subject)
+        self.assertTrue(
+            Notification.objects.filter(
+                user=self.student,
+                ticket=ticket,
+                title=f'{ticket.ticket_number} created',
+            ).exists()
+        )
 
     def test_status_update_sends_email(self):
         ticket = Ticket.objects.create(
@@ -170,6 +177,84 @@ class TicketAttachmentAndEmailTests(TestCase):
         self.assertEqual(StatusHistory.objects.filter(ticket=ticket).count(), 1)
         self.assertEqual(len(mail.outbox), 1)
         self.assertIn('status changed to In Progress', mail.outbox[0].subject)
+        self.assertTrue(
+            Notification.objects.filter(
+                user=self.student,
+                ticket=ticket,
+                title__contains='status changed to In Progress',
+            ).exists()
+        )
+        self.assertTrue(
+            Notification.objects.filter(
+                user=self.staff,
+                ticket=ticket,
+                title__contains='assigned to you',
+            ).exists()
+        )
+
+
+class NotificationCenterTests(TestCase):
+    def setUp(self):
+        self.student = User.objects.create_user(username='student', password='demo12345')
+        self.other_user = User.objects.create_user(username='other', password='demo12345')
+        self.unit = Unit.objects.create(name='IT Services')
+        self.topic = Topic.objects.create(unit=self.unit, name='Student Portal')
+        self.ticket = Ticket.objects.create(
+            unit=self.unit,
+            topic=self.topic,
+            created_by=self.student,
+            title='Portal error',
+            description='The portal shows a blank page.',
+        )
+        self.notification = Notification.objects.create(
+            user=self.student,
+            ticket=self.ticket,
+            title='Your ticket status changed to In Progress',
+            message='Your ticket status changed to In Progress.',
+        )
+
+    def test_notification_list_requires_login(self):
+        response = self.client.get('/api/ui/notifications/')
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], '/api/login/')
+
+    def test_notification_list_shows_unread_notifications(self):
+        self.client.login(username='student', password='demo12345')
+
+        response = self.client.get('/api/ui/notifications/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Notifications')
+        self.assertContains(response, 'Your ticket status changed to In Progress')
+        self.assertContains(response, '1 unread notification')
+
+    def test_open_notification_marks_read_and_redirects_to_ticket(self):
+        self.client.login(username='student', password='demo12345')
+
+        response = self.client.post(f'/api/ui/notifications/{self.notification.id}/read/')
+        self.notification.refresh_from_db()
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], f'/api/ui/tickets/{self.ticket.id}/')
+        self.assertTrue(self.notification.is_read)
+
+    def test_mark_all_read_marks_only_current_user_notifications(self):
+        other_notification = Notification.objects.create(
+            user=self.other_user,
+            ticket=self.ticket,
+            title='Other user update',
+            message='This should remain unread.',
+        )
+        self.client.login(username='student', password='demo12345')
+
+        response = self.client.post('/api/ui/notifications/read-all/')
+        self.notification.refresh_from_db()
+        other_notification.refresh_from_db()
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(self.notification.is_read)
+        self.assertFalse(other_notification.is_read)
 
 
 class TicketRoutingTests(TestCase):
@@ -214,6 +299,13 @@ class TicketRoutingTests(TestCase):
         self.assertTrue(
             self.ticket.comments.filter(
                 message__contains='Ticket routed from Triage Desk / Ticket Routing'
+            ).exists()
+        )
+        self.assertTrue(
+            Notification.objects.filter(
+                user=self.student,
+                ticket=self.ticket,
+                title__contains='routed',
             ).exists()
         )
 
@@ -301,6 +393,27 @@ class TicketsBoardTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Tickets Board')
+        self.assertNotContains(response, 'admin_demo')
+
+
+class DashboardTests(TestCase):
+    def setUp(self):
+        admin_group = Group.objects.create(name='Admin')
+        self.admin = User.objects.create_user(
+            username='admin_demo',
+            password='demo12345',
+            is_staff=True,
+        )
+        admin_group.user_set.add(self.admin)
+
+    def test_dashboard_hides_admin_demo_username(self):
+        self.client.login(username='admin_demo', password='demo12345')
+
+        response = self.client.get('/api/ui/dashboard/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Support Dashboard')
+        self.assertContains(response, 'Admin')
         self.assertNotContains(response, 'admin_demo')
 
 

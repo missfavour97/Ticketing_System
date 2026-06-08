@@ -23,6 +23,8 @@ A realistic, demonstrable server-side web application for managing university su
 
 - Email notifications when tickets are created and when ticket status changes
 
+- In-app Notification Center with unread counts for ticket creation, assignment, routing, and status changes
+
 - Realistic ticket workflow: New, In Progress, Done, Canceled, Withdrawn
 
 - Priority levels, staff assignment, unassigned queue, and SLA breach indicators
@@ -135,6 +137,19 @@ Ticket creation emails and status change emails are sent to the ticket's notific
 
 ---
 
+## In-App Notifications
+
+The Notification Center keeps ticket updates inside the application in addition to email.
+Users see an unread badge in the sidebar, can open a notification to jump to the ticket, and can mark all notifications as read.
+
+Example notifications include:
+
+- `SUP-0001 status changed to In Progress`
+- `SUP-0002 assigned to you`
+- `SUP-0003 routed`
+
+---
+
 ## Demo Accounts
 
 After running `python manage.py seed_demo`, you can log in with:
@@ -165,6 +180,9 @@ http://127.0.0.1:8000/api/ui/tickets/
 Tickets Board:
 http://127.0.0.1:8000/api/ui/tickets/board/
 
+Notifications:
+http://127.0.0.1:8000/api/ui/notifications/
+
 ---
 
 ## Demo Flow
@@ -179,7 +197,8 @@ http://127.0.0.1:8000/api/ui/tickets/board/
 8. Open the Tickets Board to show tickets grouped by workflow status.
 9. Open a ticket detail page, assign it to staff, add a comment, and move it to In Progress.
 10. Check the terminal again to show the status-change email.
-11. Log in as `admin_demo` to show the full dashboard, units, topics, and all tickets.
+11. Log back in as the student and open Notifications to show the in-app status update.
+12. Log in as `admin_demo` to show the full dashboard, units, topics, and all tickets.
 
 ---
 

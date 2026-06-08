@@ -1,0 +1,55 @@
+{% extends "tickets/base.html" %}
+
+{% block title %}Notifications{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="surface">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+        <div>
+            <div class="fw-semibold">{{ unread_count }} unread notification{{ unread_count|pluralize }}</div>
+            <div class="muted-small">Ticket updates from email notifications are also saved here.</div>
+        </div>
+
+        <form method="post" action="/api/ui/notifications/read-all/">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-primary btn-sm" {% if not unread_count %}disabled{% endif %}>
+                Mark all read
+            </button>
+        </form>
+    </div>
+
+    {% if notifications %}
+        <div class="list-group">
+            {% for notification in notifications %}
+                <div class="list-group-item {% if not notification.is_read %}border-start border-4 border-primary{% endif %}">
+                    <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
+                        <div class="flex-grow-1">
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                <h2 class="h6 mb-0">{{ notification.title }}</h2>
+                                {% if not notification.is_read %}
+                                    <span class="badge text-bg-primary">Unread</span>
+                                {% endif %}
+                            </div>
+                            <div class="muted-small mt-1">{{ notification.created_at|date:"M d, Y H:i" }}</div>
+                            <p class="mb-0 mt-2">{{ notification.message }}</p>
+                        </div>
+
+                        <form method="post" action="/api/ui/notifications/{{ notification.id }}/read/">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                {% if notification.ticket_id %}Open ticket{% else %}Mark read{% endif %}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <h2 class="h5">No notifications yet</h2>
+            <p class="muted-small mb-0">Ticket updates will appear here when your requests change.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

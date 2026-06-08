@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Attachment, Comment, StatusHistory, Ticket, Topic, Unit
+from .models import Attachment, Comment, Notification, StatusHistory, Ticket, Topic, Unit
 
 
 @admin.register(Ticket)
@@ -30,3 +30,10 @@ class AttachmentAdmin(admin.ModelAdmin):
     list_display = ('filename', 'ticket', 'uploaded_by', 'uploaded_at')
     list_filter = ('uploaded_at',)
     search_fields = ('ticket__title', 'file')
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('title', 'user', 'ticket', 'is_read', 'created_at')
+    list_filter = ('is_read', 'created_at')
+    search_fields = ('title', 'message', 'user__username', 'ticket__title')

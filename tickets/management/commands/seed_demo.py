@@ -2,7 +2,7 @@ from django.contrib.auth.models import Group, User
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
-from tickets.models import Comment, StatusHistory, Ticket, Topic, Unit
+from tickets.models import Comment, Notification, StatusHistory, Ticket, Topic, Unit
 
 
 DEMO_PASSWORD = 'demo12345'
@@ -208,6 +208,14 @@ class Command(BaseCommand):
         )
         return topic
 
+    def create_notification(self, user, ticket, title, message):
+        Notification.objects.get_or_create(
+            user=user,
+            ticket=ticket,
+            title=title,
+            defaults={'message': message}
+        )
+
     def create_ticket(
         self,
         title,
@@ -260,6 +268,29 @@ class Command(BaseCommand):
                 ticket=ticket,
                 user=user,
                 message=message,
+            )
+
+        self.create_notification(
+            created_by,
+            ticket,
+            f'{ticket.ticket_number} created',
+            f'Your ticket was created and is currently {ticket.get_status_display()}.'
+        )
+
+        if status != 'new':
+            self.create_notification(
+                created_by,
+                ticket,
+                f'{ticket.ticket_number} status changed to {ticket.get_status_display()}',
+                f'Your ticket status changed to {ticket.get_status_display()}.'
+            )
+
+        if assigned_to:
+            self.create_notification(
+                assigned_to,
+                ticket,
+                f'{ticket.ticket_number} assigned to you',
+                f'This ticket is assigned to you for follow-up.'
             )
 
         return ticket
